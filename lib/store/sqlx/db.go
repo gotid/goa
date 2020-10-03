@@ -84,15 +84,19 @@ func prefectDSN(dataSourceName *string) {
 	if strings.Count(*dataSourceName, "?") == 0 {
 		*dataSourceName += "?"
 	}
-	var args []string
 
+	var args []string
 	if strings.Count(*dataSourceName, "parseTime=true") == 0 {
 		args = append(args, "parseTime=true")
 	}
 	if strings.Count(*dataSourceName, "loc=Local") == 0 {
 		args = append(args, "loc=Local")
 	}
-	*dataSourceName += strings.Join(args, "&")
+	if strings.HasSuffix(*dataSourceName, "?") {
+		*dataSourceName += strings.Join(args, "&")
+	} else {
+		*dataSourceName += "&" + strings.Join(args, "&")
+	}
 }
 
 // ----------------- dbInstance 实现方法 ↓ ----------------- //
