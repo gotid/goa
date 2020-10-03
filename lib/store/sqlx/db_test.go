@@ -44,21 +44,25 @@ func (t *Time) String() string {
 func TestCommonDB_QueryRows(t *testing.T) {
 	dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true"
 	db := NewMySQL(dataSourceName)
-	var book struct {
-		Name  string
-		Total int
-		Price float32
-	}
-	var books []struct {
-		Total         int    `db:"totalx"`
-		Name          string `db:"book"`
-		NotExistField int    `db:"y"`
-	}
-	var accountKinds []struct {
+	type AccountKinds []struct {
 		Id   int
 		Name string
 	}
 
+	var book struct {
+		Name  string
+		Total int
+		Price float32
+		kinds AccountKinds
+	}
+	type Books []struct {
+		Total         int    `db:"totalx"`
+		Name          string `db:"book"`
+		NotExistField int    `db:"y"`
+	}
+
+	var accountKinds AccountKinds
+	var books Books
 	var adminUsers []struct {
 		UserId    int       `db:"user_id"`
 		AdminId   int       `db:"admin_id"`
@@ -66,20 +70,25 @@ func TestCommonDB_QueryRows(t *testing.T) {
 		CreatedAt time.Time `db:"created_at"`
 	}
 	var createdTime time.Time
+	errAccountKinds := db.Query(&accountKinds, "select id, value as name from nest_user.account_kind")
 	errBook := db.Query(&book, "select book, count(0) total from book group by book order by total desc")
 	errBooks := db.Query(&books, "select book, count(0) totalx, 1 as x, 2 as y from book group by book order by totalx desc")
-	errAccountKinds := db.Query(&accountKinds, "select id, value as name from nest_user.account_kind")
 	errAdminUsers := db.Query(&adminUsers, "select user_id, admin_id, txt from nest_admin.admin_user")
+
+	if errAccountKinds != nil {
+		t.Fatal(errAccountKinds)
+	}
 
 	if errBook != nil {
 		t.Fatal(errBook)
 	}
+
 	if errBooks != nil {
 		t.Fatal(errBooks)
 	}
-	if errAccountKinds != nil {
-		t.Fatal(errAccountKinds)
-	}
+
+	book.kinds = accountKinds
+
 	if errAdminUsers != nil {
 		t.Fatal(errAdminUsers)
 	}
