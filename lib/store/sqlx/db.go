@@ -19,10 +19,10 @@ const (
 )
 
 var (
-	ErrNoRows               = errors.New("没有结果集")
+	ErrNotFound             = errors.New("没有结果集")
 	ErrNotSettable          = errors.New("扫描目标不可设置")
 	ErrUnsupportedValueType = errors.New("不支持的扫描目标类型")
-	ErrNotCanInterface      = errors.New("无法读取的值，检查结构体字段是否为大写开头")
+	ErrNotReadableValue     = errors.New("无法读取的值，检查结构体字段是否为大写开头")
 )
 
 // StmtSession 语句执行和查询接口
@@ -67,6 +67,8 @@ type Option func(ins *dbInstance)
 
 // NewDB 创建指定驱动和数据源地址的 DB 实例
 func NewDB(driverName, dataSourceName string, opts ...Option) DB {
+	prefectDSN(&dataSourceName)
+
 	db := &dbInstance{
 		driverName:     driverName,
 		dataSourceName: dataSourceName,
@@ -75,6 +77,22 @@ func NewDB(driverName, dataSourceName string, opts ...Option) DB {
 		opt(db)
 	}
 	return db
+}
+
+// 自动补全连接字符串
+func prefectDSN(dataSourceName *string) {
+	if strings.Count(*dataSourceName, "?") == 0 {
+		*dataSourceName += "?"
+	}
+	var args []string
+
+	if strings.Count(*dataSourceName, "parseTime=true") == 0 {
+		args = append(args, "parseTime=true")
+	}
+	if strings.Count(*dataSourceName, "loc=Local") == 0 {
+		args = append(args, "loc=Local")
+	}
+	*dataSourceName += strings.Join(args, "&")
 }
 
 // ----------------- dbInstance 实现方法 ↓ ----------------- //
@@ -105,6 +123,7 @@ func (d *dbInstance) Query(result interface{}, query string, args ...interface{}
 	}
 	return d.query(db, func(rows *sql.Rows) error {
 		return scan(rows, result)
+		//return unmarshalRows(result, rows, false)
 	}, query, args...)
 }
 
@@ -157,15 +176,17 @@ func scan(rows *sql.Rows, dest interface{}) error {
 	dte := reflect.TypeOf(dest).Elem()
 	dve := dv.Elem()
 	switch dte.Kind() {
-	case reflect.String, reflect.Bool, reflect.Float32, reflect.Float64,
-		reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+	case reflect.Bool,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64,
+		reflect.String:
 		if dve.CanSet() {
 			if !rows.Next() {
 				if err := rows.Err(); err != nil {
 					return err
 				}
-				return ErrNoRows
+				return ErrNotFound
 			}
 			return rows.Scan(dest)
 		} else {
@@ -176,7 +197,7 @@ func scan(rows *sql.Rows, dest interface{}) error {
 			if err := rows.Err(); err != nil {
 				return err
 			}
-			return ErrNoRows
+			return ErrNotFound
 		}
 		// 获取行的列名切片
 		colNames, err := rows.Columns()
@@ -278,16 +299,16 @@ func mapStructFieldsToSlice(dve reflect.Value, columns []string) ([]interface{},
 			switch field.Kind() {
 			case reflect.Ptr:
 				if !field.CanInterface() {
-					return nil, ErrNotCanInterface
+					return nil, ErrNotReadableValue
 				}
 				if field.IsNil() {
-					typ := mapping.Deref(field.Type())
-					field.Set(reflect.New(typ))
+					baseValueType := mapping.Deref(field.Type())
+					field.Set(reflect.New(baseValueType))
 				}
 				values[i] = field.Interface()
 			default:
-				if !field.CanAddr() || !field.CanInterface() {
-					return nil, ErrNotCanInterface
+				if !field.CanAddr() || !field.Addr().CanInterface() {
+					return nil, ErrNotReadableValue
 				}
 				values[i] = field.Addr().Interface()
 			}
@@ -316,7 +337,7 @@ func getColumnValueMap(dve reflect.Value) (map[string]interface{}, error) {
 		switch field.Kind() {
 		case reflect.Ptr:
 			if !field.CanInterface() {
-				return nil, ErrNotCanInterface
+				return nil, ErrNotReadableValue
 			}
 			if field.IsNil() {
 				typ := mapping.Deref(field.Type())
@@ -325,7 +346,7 @@ func getColumnValueMap(dve reflect.Value) (map[string]interface{}, error) {
 			result[columnName] = field.Interface()
 		default:
 			if !field.CanAddr() || !field.Addr().CanInterface() {
-				return nil, ErrNotCanInterface
+				return nil, ErrNotReadableValue
 			}
 			result[columnName] = field.Addr().Interface()
 		}
@@ -354,8 +375,8 @@ func getFields(dve reflect.Value) []reflect.Value {
 		field := v.Field(i)
 		// 指针取值
 		if field.Kind() == reflect.Ptr && field.IsNil() {
-			typ := mapping.Deref(field.Type()) // 解引用，取值
-			field.Set(reflect.New(typ))
+			baseValueType := mapping.Deref(field.Type()) // 解引用，取值
+			field.Set(reflect.New(baseValueType))
 		}
 
 		field = reflect.Indirect(field)

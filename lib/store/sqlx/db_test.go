@@ -7,7 +7,7 @@ import (
 )
 
 func TestCommonDB_QueryRow(t *testing.T) {
-	db := NewMySQL("root:asdfasdf@tcp(192.168.0.166:3306)/nest_label")
+	db := NewMySQL("root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true")
 	result := struct {
 		Name  string
 		Total int
@@ -42,7 +42,9 @@ func (t *Time) String() string {
 }
 
 func TestCommonDB_QueryRows(t *testing.T) {
-	db := NewMySQL("root:asdfasdf@tcp(192.168.0.166:3306)/nest_label")
+	dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true"
+	db := NewMySQL(dataSourceName)
+	//db := sqlx.NewMysql(dataSourceName)
 	//var book struct {
 	//	Name  string
 	//	Total int
@@ -60,17 +62,19 @@ func TestCommonDB_QueryRows(t *testing.T) {
 	//	Name string
 	//}
 
-	var adminUsers []struct {
-		UserId    int    `db:"user_id"`
-		AdminId   int    `db:"admin_id"`
-		Txt       string `db:"txt"`
-		CreatedAt *Time  `db:"created_at"`
-	}
+	//var adminUsers []struct {
+	//	UserId    int       `db:"user_id"`
+	//	AdminId   int       `db:"admin_id"`
+	//	Txt       string    `db:"txt"`
+	//	CreatedAt time.Time `db:"created_at"`
+	//}
+	var createdTime time.Time
 	//errBook := db.Query(&book, "select book, count(0) total from book group by book order by total desc")
 	//errBooks := db.Query(&books, "select book, count(0) totalx, 1 as x, 2 as y from book group by book order by totalx desc")
 	//errAccountKinds := db.Query(&accountKinds, "select id, value as name from nest_user.account_kind")
 	//errAdminUsers := db.Query(&adminUsers, "select user_id, admin_id, txt from nest_admin.admin_user")
-	errAdminUsers := db.Query(&adminUsers, "select user_id, admin_id, txt, created_at from nest_admin.admin_user")
+	errAdminUsers := db.Query(&createdTime, "select created_at from nest_admin.admin_user")
+	//errAdminUsers := db.QueryRows(&createdTime, "select created_at from nest_admin.admin_user")
 
 	//if errBook != nil {
 	//	t.Fatalf("%v", errBook)
@@ -95,7 +99,9 @@ func TestCommonDB_QueryRows(t *testing.T) {
 	//	fmt.Println(accountKind)
 	//}
 
-	for _, adminUser := range adminUsers {
-		fmt.Println(adminUser)
-	}
+	//for _, adminUser := range adminUsers {
+	//	fmt.Println(adminUser)
+	//}
+
+	fmt.Println(createdTime)
 }

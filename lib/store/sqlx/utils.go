@@ -82,7 +82,7 @@ func escape(str string) string {
 
 // logSqlError TODO 日志开关控制
 func logSqlError(sql string, err error) {
-	if err != nil && err != ErrNoRows {
+	if err != nil && err != ErrNotFound {
 		log.Fatalf("[SQL] SQL: %s, 错误: %s", sql, err.Error())
 	}
 }
