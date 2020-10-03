@@ -19,18 +19,21 @@ type (
 	}
 )
 
-func doTransaction(c *conn, beginTx beginTxFn, fn func(session Session) error) error {
+func doTransaction(c *conn, beginTx beginTxFn, fn func(session Session) error) (err error) {
 	db, err := getConn(c.driverName, c.dataSourceName)
 	if err != nil {
 		logConnError(c.dataSourceName, err)
 		return err
 	}
-	tx, err := beginTx(db)
+
+	var tx trans
+	tx, err = beginTx(db)
 	if err != nil {
-		return err
+		return
 	}
 
 	defer func() {
+		fmt.Println("事务收尾")
 		if p := recover(); p != nil {
 			if e := tx.Rollback(); e != nil {
 				err = fmt.Errorf("恢复自 %v, 回滚失败: %v", p, e)
