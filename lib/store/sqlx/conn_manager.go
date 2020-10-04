@@ -2,7 +2,7 @@ package sqlx
 
 import (
 	"database/sql"
-	"goa/lib"
+	"goa/lib/syncx"
 	"io"
 	"sync"
 	"time"
@@ -14,7 +14,7 @@ const (
 	maxLifetime  = time.Minute // 允许的最大连接空闲时间
 )
 
-var connManager = lib.NewResourceManager()
+var connManager = syncx.NewResourceManager()
 
 // 缓存的数据库连接结构
 type cachedConn struct {

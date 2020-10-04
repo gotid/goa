@@ -1,8 +1,7 @@
-package lib
+package syncx
 
 import (
 	"goa/lib/errorx"
-	"goa/lib/syncx"
 	"io"
 	"sync"
 )
@@ -10,7 +9,7 @@ import (
 // ResourceManager 资源管理器提供可复用的资源
 type ResourceManager struct {
 	resources   map[string]io.Closer
-	cachedCalls syncx.CachedCalls
+	cachedCalls CachedCalls
 	lock        sync.RWMutex
 }
 
@@ -18,7 +17,7 @@ type ResourceManager struct {
 func NewResourceManager() *ResourceManager {
 	return &ResourceManager{
 		resources:   make(map[string]io.Closer),
-		cachedCalls: syncx.NewCachedCalls(),
+		cachedCalls: NewCachedCalls(),
 	}
 }
 
