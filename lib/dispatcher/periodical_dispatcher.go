@@ -27,10 +27,9 @@ type (
 	// Confirmer 确认者
 	Confirmer chan lang.PlaceholderType
 
-	// 定时任务执行器
-	// Perioical Dispatcher
+	// 定时调度器
 	PeriodicalDispatcher struct {
-		interval    time.Duration       // 定期执行时间
+		interval    time.Duration       // 任务调度间隔
 		taskManager TaskManager         // 任务管理者
 		commander   Commander           // 任务指挥者
 		confirmer   Confirmer           // 任务确认者

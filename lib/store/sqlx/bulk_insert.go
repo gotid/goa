@@ -10,17 +10,6 @@ import (
 	"time"
 )
 
-const (
-	// 最大批量插入数量
-	maxBulkRows = 1000
-
-	// SQL 中的 values 标记
-	valuesTag = "values"
-
-	// 定期执行程序的的间隔执行时间
-	flushInterval = time.Second
-)
-
 type (
 	// 批量插入器结构
 	BulkInserter struct {
@@ -30,7 +19,7 @@ type (
 		// 插入管理器
 		manager *insertManager
 
-		// 定时执行器
+		// 定时调度器
 		executor *dispatcher.PeriodicalDispatcher
 	}
 
@@ -59,6 +48,17 @@ type (
 	ResultHandler func(sql.Result, error)
 )
 
+const (
+	// 最大批量插入数量
+	maxBulkRows = 2
+
+	// SQL 中的 values 标记
+	valuesTag = "values"
+
+	// 定期执行程序的的间隔执行时间
+	flushInterval = time.Second
+)
+
 var emptyBulkStmt bulkStmt
 
 // NewBulkInserter 新建批量插入器
@@ -80,10 +80,6 @@ func NewBulkInserter(c Conn, stmt string) (*BulkInserter, error) {
 	}, nil
 }
 
-func (bi *BulkInserter) Flush() {
-	bi.executor.Flush()
-}
-
 func (bi *BulkInserter) Insert(args ...interface{}) error {
 	value, err := formatQuery(bi.stmt.valueFormat, args...)
 	if err != nil {
@@ -95,15 +91,26 @@ func (bi *BulkInserter) Insert(args ...interface{}) error {
 	return nil
 }
 
+func (bi *BulkInserter) Flush() {
+	bi.executor.Flush()
+}
+
+// SetResultHandler 设置结果处理器
+func (bi *BulkInserter) SetRequestHandler(handler ResultHandler) {
+	bi.executor.Sync(func() {
+		bi.manager.resultHandler = handler
+	})
+}
+
 func (bi *BulkInserter) UpdateStmt(stmt string) error {
-	insertStmt, err := parseBulkInsertStmt(stmt)
+	newStmt, err := parseBulkInsertStmt(stmt)
 	if err != nil {
 		return err
 	}
 
 	bi.executor.Flush()
 	bi.executor.Sync(func() {
-		bi.manager.stmt = insertStmt
+		bi.manager.stmt = newStmt
 	})
 
 	return nil
@@ -116,31 +123,41 @@ func (bi *BulkInserter) UpdateOrDelete(fn func()) {
 
 // --------------- 扩展 insertManager ↓ --------------- //
 
-func (in *insertManager) Add(row interface{}) bool {
-	in.values = append(in.values, row.(string))
-	return len(in.values) >= maxBulkRows
+func (m *insertManager) Add(row interface{}) bool {
+	m.values = append(m.values, row.(string))
+	return len(m.values) >= maxBulkRows
 }
 
-func (in *insertManager) Execute(rows interface{}) {
+func (m *insertManager) Execute(rows interface{}) {
 	values := rows.([]string)
 	if len(values) == 0 {
 		return
 	}
 
-	stmtWithoutValues := in.stmt.prefix
+	stmtWithoutValues := m.stmt.prefix
 	valuesStr := strings.Join(values, ",")
 	stmt := strings.Join([]string{stmtWithoutValues, valuesStr}, " ")
-	if len(in.stmt.suffix) > 0 {
-		stmt = strings.Join([]string{stmt, in.stmt.suffix}, " ")
+	if len(m.stmt.suffix) > 0 {
+		stmt = strings.Join([]string{stmt, m.stmt.suffix}, " ")
 	}
 
 	logx.Info("测试SQL")
 	logx.Info(stmt)
+
+	// 真正执行插入
+	result, err := m.conn.Exec(stmt)
+
+	// 处理执行结果
+	if m.resultHandler != nil {
+		m.resultHandler(result, err)
+	} else if err != nil {
+		logx.Errorf("[批量插入] SQL: %s, 错误: %s", stmt, err)
+	}
 }
 
-func (in *insertManager) PopAll() interface{} {
-	values := in.values
-	in.values = nil
+func (m *insertManager) PopAll() interface{} {
+	values := m.values
+	m.values = nil
 	return values
 }
 
