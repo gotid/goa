@@ -59,12 +59,14 @@ func beginTx(db *sql.DB) (TxSession, error) {
 	}
 }
 
+// Query 带事务查询
 func (tx txSession) Query(dest interface{}, query string, args ...interface{}) error {
 	return doQuery(tx.Tx, func(rows *sql.Rows) error {
 		return scan(rows, dest)
 	}, query, args...)
 }
 
+// Exec 带事务执行
 func (tx txSession) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return doExec(tx.Tx, query, args...)
 }

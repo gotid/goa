@@ -1,4 +1,4 @@
-package executor
+package dispatcher
 
 import (
 	"goa/lib/lang"
@@ -14,11 +14,11 @@ import (
 const idleRound = 10
 
 type (
-	// Container 容器接口：定义任务的新增、执行、移除方法。
-	Container interface {
-		Add(task interface{}) bool // 添加任务到存储
-		Exec(task interface{})     // 执行任务
-		PopAll() interface{}       // 从容器删除并返回容器内所有任务
+	// TaskManager 任务管理者接口：负责任务的新增、执行、移除。
+	TaskManager interface {
+		Add(task interface{}) bool // 添加任务
+		Execute(task interface{})  // 执行任务
+		PopAll() interface{}       // 删除并返回当前所有任务
 	}
 
 	// Commander 指挥者：一个传递 interface{} 的通道
@@ -28,41 +28,42 @@ type (
 	Confirmer chan lang.PlaceholderType
 
 	// 定时任务执行器
-	PeriodicalExecutor struct {
-		container Container           // 任务存储者
-		commander Commander           // 任务指挥者
-		confirmer Confirmer           // 任务确认者
-		interval  time.Duration       // 定期执行时间
-		wg        sync.WaitGroup      // 同步等待组
-		wgBarrier syncx.Barrier       // 同步等待组的屏障器
-		guarded   bool                // 是否守卫
-		newTicker func() timex.Ticker // 任务断续器
-		lock      sync.Mutex
+	// Perioical Dispatcher
+	PeriodicalDispatcher struct {
+		interval    time.Duration       // 定期执行时间
+		taskManager TaskManager         // 任务管理者
+		commander   Commander           // 任务指挥者
+		confirmer   Confirmer           // 任务确认者
+		wg          sync.WaitGroup      // 同步等待组
+		wgBarrier   syncx.Barrier       // 同步等待组的屏障器
+		guarded     bool                // 是否守卫
+		ticker      func() timex.Ticker // 任务断续器
+		lock        sync.Mutex
 	}
 )
 
-// NewPeriodicalExecutor 定时执行器：定期调用执行容器内的任务
-func NewPeriodicalExecutor(container Container, interval time.Duration) *PeriodicalExecutor {
-	executor := &PeriodicalExecutor{
-		container: container,
-		commander: make(chan interface{}, 1),
-		confirmer: make(chan lang.PlaceholderType),
-		interval:  interval,
-		newTicker: func() timex.Ticker {
+// NewPeriodicalDispatcher 定时执行器（间隔时间，任务管理器）
+func NewPeriodicalDispatcher(interval time.Duration, taskManager TaskManager) *PeriodicalDispatcher {
+	dispatcher := &PeriodicalDispatcher{
+		interval:    interval,
+		taskManager: taskManager,
+		commander:   make(chan interface{}, 1),
+		confirmer:   make(chan lang.PlaceholderType),
+		ticker: func() timex.Ticker {
 			return timex.NewTicker(interval)
 		},
 	}
 
-	// 程序关闭前，尽量执行完容器内的剩余任务
+	// 程序关闭前，尽量执行剩余任务
 	proc.AddShutdownListener(func() {
-		executor.Flush()
+		dispatcher.Flush()
 	})
 
-	return executor
+	return dispatcher
 }
 
 // Add 添加新任务给指挥者并确认可以执行
-func (e *PeriodicalExecutor) Add(task interface{}) {
+func (e *PeriodicalDispatcher) Add(task interface{}) {
 	if tasks, ok := e.setAndGet(task); ok {
 		e.commander <- tasks // 将当前所有任务发给指挥者
 		<-e.confirmer        // 确认者进行确认
@@ -70,32 +71,32 @@ func (e *PeriodicalExecutor) Add(task interface{}) {
 }
 
 // Flush 清洗任务
-func (e *PeriodicalExecutor) Flush() bool {
+func (e *PeriodicalDispatcher) Flush() bool {
 	e.enter()
 	return e.execute(func() interface{} {
 		e.lock.Lock()
 		defer e.lock.Unlock()
-		return e.container.PopAll()
+		return e.taskManager.PopAll()
 	}())
 }
 
 // Sync 同步执行一个自定义函数
-func (e *PeriodicalExecutor) Sync(fn func()) {
+func (e *PeriodicalDispatcher) Sync(fn func()) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	fn()
 }
 
 // Wait 加锁保护等待操作
-func (e *PeriodicalExecutor) Wait() {
+func (e *PeriodicalDispatcher) Wait() {
 	e.wgBarrier.Guard(func() {
 		e.wg.Wait()
 	})
 }
 
 // setAndGet 新增并返回任务，如有可能则后台直接执行任务
-// 返回：加入后的所有待处理任务，是否已递交容器
-func (e *PeriodicalExecutor) setAndGet(task interface{}) (interface{}, bool) {
+// 返回：加入后的所有待处理任务，是否已递交任务管理者
+func (e *PeriodicalDispatcher) setAndGet(task interface{}) (interface{}, bool) {
 	e.lock.Lock()
 	defer func() {
 		var start bool
@@ -109,17 +110,17 @@ func (e *PeriodicalExecutor) setAndGet(task interface{}) (interface{}, bool) {
 		}
 	}()
 
-	if e.container.Add(task) {
-		return e.container.PopAll(), true
+	if e.taskManager.Add(task) {
+		return e.taskManager.PopAll(), true
 	}
 
 	return nil, false
 }
 
 // 后台任务清洗
-func (e *PeriodicalExecutor) backgroundFlush() {
+func (e *PeriodicalDispatcher) backgroundFlush() {
 	threading.GoSafe(func() {
-		ticker := e.newTicker()
+		ticker := e.ticker()
 		defer ticker.Stop()
 
 		// 指挥者调度定时执行器
@@ -153,31 +154,31 @@ func (e *PeriodicalExecutor) backgroundFlush() {
 }
 
 // enter 执行者进入，等待组加锁
-func (e *PeriodicalExecutor) enter() {
+func (e *PeriodicalDispatcher) enter() {
 	e.wgBarrier.Guard(func() {
 		e.wg.Add(1)
 	})
 }
 
-// execute 调用容器执行任务
-func (e *PeriodicalExecutor) execute(tasks interface{}) bool {
+// execute 调度任务管理者，执行任务
+func (e *PeriodicalDispatcher) execute(tasks interface{}) bool {
 	defer e.done()
 
 	ok := e.has(tasks)
 	if ok {
-		e.container.Exec(tasks)
+		e.taskManager.Execute(tasks)
 	}
 
 	return ok
 }
 
 // done 完成分组任务
-func (e *PeriodicalExecutor) done() {
+func (e *PeriodicalDispatcher) done() {
 	e.wg.Done()
 }
 
 // has 判断任务有无
-func (e *PeriodicalExecutor) has(tasks interface{}) bool {
+func (e *PeriodicalDispatcher) has(tasks interface{}) bool {
 	if tasks == nil {
 		return false
 	}

@@ -25,14 +25,14 @@ type (
 	// StmtConn 语句执行和查询接口
 	//StmtConn interface {
 	//	Query(dest interface{}, args ...interface{}) error
-	//	Exec(args ...interface{}) (sql.Result, error)
+	//	Execute(args ...interface{}) (sql.Result, error)
 	//	Close() error
 	//}
 
 	// stmtConn 预编译连接
 	//stmtConn interface {
 	//	Query(args ...interface{}) (*sql.Rows, error)
-	//	Exec(args ...interface{}) (sql.Result, error)
+	//	Execute(args ...interface{}) (sql.Result, error)
 	//}
 
 	// statement 预编译语句会话：将查询封装为预编译语句，供底层查询和执行
@@ -44,7 +44,7 @@ type (
 	Session interface {
 		Query(dest interface{}, query string, args ...interface{}) error
 		Exec(query string, args ...interface{}) (sql.Result, error)
-		//Prepare(query string) (StmtConn, error)
+		//Prepare(valueFormat string) (StmtConn, error)
 	}
 
 	// session 提供内部查询和执行的会话接口
@@ -54,7 +54,7 @@ type (
 	}
 
 	// TransactFn 事务内执行函数，传入事务会话
-	TransactFn func(session Session) error
+	TransactFn func(tx Session) error
 
 	// Conn 提供外部数据库会话和事务的接口
 	Conn interface {
@@ -118,13 +118,13 @@ func (c *conn) Transact(fn TransactFn) error {
 }
 
 // Prepare 创建一个稍后查询或执行的预编译语句
-//func (c *conn) Prepare(query string) (stmt StmtConn, err error) {
+//func (c *conn) Prepare(valueFormat string) (stmt StmtConn, err error) {
 //	db, err := getConn(c.driverName, c.dataSourceName)
 //	if err != nil {
 //		logConnError(c.dataSourceName, err)
 //		return nil, err
 //	}
-//	if st, err := db.Prepare(query); err != nil {
+//	if st, err := db.Prepare(valueFormat); err != nil {
 //		return nil, err
 //	} else {
 //		stmt = statement{stmt: st}
@@ -136,7 +136,7 @@ func (c *conn) Transact(fn TransactFn) error {
 //	panic("implement me")
 //}
 //
-//func (s statement) Exec(args ...interface{}) (sql.Result, error) {
+//func (s statement) Execute(args ...interface{}) (sql.Result, error) {
 //	panic("implement me")
 //}
 //

@@ -10,29 +10,32 @@ func TestTxSession_Exec(t *testing.T) {
 	dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true"
 	db := NewMySQL(dataSourceName)
 
-	err := db.Transact(func(session Session) (err error) {
+	err := db.Transact(func(tx Session) (err error) {
 
-		// 执行1
-		var result1 sql.Result
-		result1, err = session.Exec("insert into book(book) values('3rsf')")
+		// 插入用户库——账号表
+		var result sql.Result
+		result, err = tx.Exec("insert into nest_user.account(is_valid) values(1)")
+		if err != nil {
+			return err
+		}
+		var uid int64
+		uid, err = result.LastInsertId()
 
-		// 故障点
-		//a := 1
-		//b := 0
-		//fmt.Println(a / b)
+		// 插入用户库——档案表
+		_, err = tx.Exec("insert into nest_user.profile(id, kind, nickname) values(?, 1, '测试小号2')", uid)
+		if err != nil {
+			panic(err)
+			return err
+		}
 
-		// 执行2
-		_, err = session.Exec("insert into book(id, book) values(20, 'sadsf')")
+		// 模拟故障
+		// 插入管理库——管理员与用户关系表
+		_, err = tx.Exec("insert into nest_admin.admin_user(user_id, admin_id) values(?, 20)", uid)
 		if err != nil {
 			return err
 		}
 
-		var insertId int64
-		insertId, err = result1.LastInsertId()
-		if err != nil {
-			return err
-		}
-		fmt.Println("新增编号", insertId)
+		fmt.Println("新增用户", uid)
 		return nil
 	})
 
