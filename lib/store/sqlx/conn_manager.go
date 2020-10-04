@@ -16,6 +16,7 @@ const (
 
 var connManager = lib.NewResourceManager()
 
+// 缓存的数据库连接结构
 type cachedConn struct {
 	*sql.DB
 	once sync.Once
@@ -42,7 +43,9 @@ func getConn(driverName, dataSourceName string) (*sql.DB, error) {
 
 // getCachedConn 从缓存池中获取连接
 func getCachedConn(driverName, dataSourceName string) (*cachedConn, error) {
+	// 一个DSN，对应一个缓存连接
 	cc, err := connManager.Get(dataSourceName, func() (io.Closer, error) {
+		// 无缓存连接，则新建并通过该函数回调并加入缓存
 		conn, err := newConn(driverName, dataSourceName)
 		if err != nil {
 			return nil, err

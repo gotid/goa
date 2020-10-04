@@ -22,6 +22,7 @@ func NewResourceManager() *ResourceManager {
 	}
 }
 
+// Close 关闭该资源管理器。
 func (m *ResourceManager) Close() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -35,6 +36,7 @@ func (m *ResourceManager) Close() error {
 	return errs.Error()
 }
 
+// Get 获取指定 key 的缓存资源，如缓存不存在，则调用 getFn 回源获取并加入缓存资源映射。
 func (m *ResourceManager) Get(key string, getFn func() (io.Closer, error)) (io.Closer, error) {
 	result, _, err := m.cachedCalls.Get(key, func() (interface{}, error) {
 		m.lock.Lock()

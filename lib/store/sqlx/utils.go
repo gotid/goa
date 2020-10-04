@@ -316,7 +316,7 @@ func getColumnValueMap(dve reflect.Value) (map[string]interface{}, error) {
 
 // getColumnName 解析结构体字段中的数据库字段标记
 func getColumnName(field reflect.StructField) string {
-	tagName := field.Tag.Get(tagFieldKey)
+	tagName := field.Tag.Get(tagName)
 	if len(tagName) == 0 {
 		return ""
 	} else {

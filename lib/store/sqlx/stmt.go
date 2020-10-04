@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func doQuery(db sessionConn, scanner func(*sql.Rows) error, query string, args ...interface{}) error {
+func doQuery(db session, scanner func(*sql.Rows) error, query string, args ...interface{}) error {
 	// 格式化后的查询字符串
 	stmt, err := formatQuery(query, args...)
 	if err != nil {
@@ -34,7 +34,7 @@ func doQuery(db sessionConn, scanner func(*sql.Rows) error, query string, args .
 	return scanner(rows)
 }
 
-func doExec(db sessionConn, query string, args ...interface{}) (sql.Result, error) {
+func doExec(db session, query string, args ...interface{}) (sql.Result, error) {
 	// 格式化后的查询字符串
 	stmt, err := formatQuery(query, args...)
 	if err != nil {

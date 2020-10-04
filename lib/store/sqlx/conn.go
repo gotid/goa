@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	// tagFieldKey 结构体字段中标记的数据库字段键名
-	tagFieldKey = "db"
+	// tagName 结构体字段中，数据库字段的标记名称
+	tagName = "db"
 
-	// 慢日志阈值
+	// 数据库慢日志阈值，用于记录慢查询和慢执行
 	slowThreshold = 500 * time.Millisecond
 )
 
@@ -18,7 +18,7 @@ var (
 	ErrNotFound             = errors.New("没有结果集")
 	ErrNotSettable          = errors.New("扫描目标不可设置")
 	ErrUnsupportedValueType = errors.New("不支持的扫描目标类型")
-	ErrNotReadableValue     = errors.New("无法读取的值，检查结构体字段是否为大写开头")
+	ErrNotReadableValue     = errors.New("无法读取的值，检查结构字段是否大写开头")
 )
 
 type (
@@ -29,47 +29,51 @@ type (
 	//	Close() error
 	//}
 
-	// Session 提供基于 SQL 执行和查询
-	Session interface {
-		Query(dest interface{}, query string, args ...interface{}) error
-		Exec(query string, args ...interface{}) (sql.Result, error)
-		//Prepare(query string) (StmtConn, error)
-	}
-
-	// Conn 封装数据库会话和事务操作
-	Conn interface {
-		Session
-		Transact(fn func(session Session) error) error
-	}
-
-	sessionConn interface {
-		Query(query string, args ...interface{}) (*sql.Rows, error)
-		Exec(query string, args ...interface{}) (sql.Result, error)
-	}
-
 	// stmtConn 预编译连接
 	//stmtConn interface {
 	//	Query(args ...interface{}) (*sql.Rows, error)
 	//	Exec(args ...interface{}) (sql.Result, error)
 	//}
 
-	// Option 是一个可选的数据库增强函数
-	Option func(ins *conn)
-
-	// conn 数据库实例，封装SQL和参数为语句、开启事务、支持断路器保护
-	conn struct {
-		driverName     string    // 驱动名称，支持 mysql/postgres/clickhouse
-		dataSourceName string    // 数据源名称 Data Source Name，既数据库连接字符串
-		beginTx        beginTxFn // 可开始事务
-	}
-
 	// statement 预编译语句会话：将查询封装为预编译语句，供底层查询和执行
 	//statement struct {
 	//	stmt *sql.Stmt
 	//}
+
+	// Session 提供外部查询和执行的会话接口
+	Session interface {
+		Query(dest interface{}, query string, args ...interface{}) error
+		Exec(query string, args ...interface{}) (sql.Result, error)
+		//Prepare(query string) (StmtConn, error)
+	}
+
+	// session 提供内部查询和执行的会话接口
+	session interface {
+		Query(query string, args ...interface{}) (*sql.Rows, error)
+		Exec(query string, args ...interface{}) (sql.Result, error)
+	}
+
+	// TransactFn 事务内执行函数，传入事务会话
+	TransactFn func(session Session) error
+
+	// Conn 提供外部数据库会话和事务的接口
+	Conn interface {
+		Session
+		Transact(fn TransactFn) error
+	}
+
+	// conn 包内连接实例，封装查询、执行、事务及断路器支持
+	conn struct {
+		driverName     string    // 驱动名称，支持 mysql/postgres/clickhouse 等 sql-like
+		dataSourceName string    // 数据源名称 Data Source Name，既数据库连接字符串
+		beginTx        beginTxFn // 可开始事务
+	}
+
+	// Option 是一个可选的数据库增强函数
+	Option func(c *conn)
 )
 
-// NewConn 创建指定驱动和数据源地址的 Conn 实例
+// NewConn 新建指定数据库驱动和DSN的连接
 func NewConn(driverName, dataSourceName string, opts ...Option) Conn {
 	prefectDSN(&dataSourceName)
 
@@ -109,8 +113,8 @@ func (c *conn) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return doExec(db, query, args...)
 }
 
-func (c *conn) Transact(fn func(session Session) error) error {
-	return doTransaction(c, c.beginTx, fn)
+func (c *conn) Transact(fn TransactFn) error {
+	return doTx(c, c.beginTx, fn)
 }
 
 // Prepare 创建一个稍后查询或执行的预编译语句

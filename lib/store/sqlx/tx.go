@@ -6,9 +6,9 @@ import (
 )
 
 type (
-	beginTxFn func(*sql.DB) (trans, error)
+	beginTxFn func(*sql.DB) (TxSession, error)
 
-	trans interface {
+	TxSession interface {
 		Session
 		Commit() error
 		Rollback() error
@@ -19,21 +19,20 @@ type (
 	}
 )
 
-func doTransaction(c *conn, beginTx beginTxFn, fn func(session Session) error) (err error) {
+func doTx(c *conn, beginTx beginTxFn, transact TransactFn) (err error) {
 	db, err := getConn(c.driverName, c.dataSourceName)
 	if err != nil {
 		logConnError(c.dataSourceName, err)
 		return err
 	}
 
-	var tx trans
+	var tx TxSession
 	tx, err = beginTx(db)
 	if err != nil {
 		return
 	}
 
 	defer func() {
-		fmt.Println("事务收尾")
 		if p := recover(); p != nil {
 			if e := tx.Rollback(); e != nil {
 				err = fmt.Errorf("恢复自 %v, 回滚失败: %v", p, e)
@@ -49,10 +48,10 @@ func doTransaction(c *conn, beginTx beginTxFn, fn func(session Session) error) (
 		}
 	}()
 
-	return fn(tx)
+	return transact(tx)
 }
 
-func beginTx(db *sql.DB) (trans, error) {
+func beginTx(db *sql.DB) (TxSession, error) {
 	if tx, err := db.Begin(); err != nil {
 		return nil, err
 	} else {
@@ -60,12 +59,12 @@ func beginTx(db *sql.DB) (trans, error) {
 	}
 }
 
-func (t txSession) Query(dest interface{}, query string, args ...interface{}) error {
-	return doQuery(t.Tx, func(rows *sql.Rows) error {
+func (tx txSession) Query(dest interface{}, query string, args ...interface{}) error {
+	return doQuery(tx.Tx, func(rows *sql.Rows) error {
 		return scan(rows, dest)
 	}, query, args...)
 }
 
-func (t txSession) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return doExec(t.Tx, query, args...)
+func (tx txSession) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return doExec(tx.Tx, query, args...)
 }
