@@ -20,7 +20,7 @@ type (
 		manager *insertManager
 
 		// 定时调度器
-		executor *dispatcher.PeriodicalDispatcher
+		dispatcher *dispatcher.PeriodicalDispatcher
 	}
 
 	// 批量插入语句结构
@@ -74,9 +74,9 @@ func NewBulkInserter(c Conn, stmt string) (*BulkInserter, error) {
 	}
 
 	return &BulkInserter{
-		stmt:     insertStmt,
-		manager:  manager,
-		executor: dispatcher.NewPeriodicalDispatcher(flushInterval, manager),
+		stmt:       insertStmt,
+		manager:    manager,
+		dispatcher: dispatcher.NewPeriodicalDispatcher(flushInterval, manager),
 	}, nil
 }
 
@@ -86,18 +86,18 @@ func (bi *BulkInserter) Insert(args ...interface{}) error {
 		return err
 	}
 
-	bi.executor.Add(value)
+	bi.dispatcher.Add(value)
 
 	return nil
 }
 
 func (bi *BulkInserter) Flush() {
-	bi.executor.Flush()
+	bi.dispatcher.Flush()
 }
 
 // SetResultHandler 设置结果处理器
 func (bi *BulkInserter) SetRequestHandler(handler ResultHandler) {
-	bi.executor.Sync(func() {
+	bi.dispatcher.Sync(func() {
 		bi.manager.resultHandler = handler
 	})
 }
@@ -108,8 +108,8 @@ func (bi *BulkInserter) UpdateStmt(stmt string) error {
 		return err
 	}
 
-	bi.executor.Flush()
-	bi.executor.Sync(func() {
+	bi.dispatcher.Flush()
+	bi.dispatcher.Sync(func() {
 		bi.manager.stmt = newStmt
 	})
 
@@ -117,7 +117,7 @@ func (bi *BulkInserter) UpdateStmt(stmt string) error {
 }
 
 func (bi *BulkInserter) UpdateOrDelete(fn func()) {
-	bi.executor.Flush()
+	bi.dispatcher.Flush()
 	fn()
 }
 
@@ -141,8 +141,7 @@ func (m *insertManager) Execute(rows interface{}) {
 		stmt = strings.Join([]string{stmt, m.stmt.suffix}, " ")
 	}
 
-	logx.Info("测试SQL")
-	logx.Info(stmt)
+	logx.Infof("测试SQL: %s", stmt)
 
 	// 真正执行插入
 	result, err := m.conn.Exec(stmt)
