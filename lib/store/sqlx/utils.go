@@ -3,8 +3,8 @@ package sqlx
 import (
 	"database/sql"
 	"fmt"
+	"goa/lib/logx"
 	"goa/lib/mapping"
-	"log"
 	"reflect"
 	"strings"
 )
@@ -102,16 +102,15 @@ func prefectDSN(dataSourceName *string) {
 	}
 }
 
-// logSqlError TODO 日志开关控制
 func logSqlError(sql string, err error) {
 	if err != nil && err != ErrNotFound {
-		log.Fatalf("[SQL] %s \n错误: %s", sql, err.Error())
+		logx.Errorf("[SQL] %s \n错误: %s", sql, err.Error())
 	}
 }
 
 func logConnError(dsn string, err error) {
 	dsn = desensitize(dsn)
-	log.Printf("获取数据库实例失败 %s: %v", dsn, err)
+	logx.Errorf("获取数据库实例失败 %s: %v", dsn, err)
 }
 
 // desensitize 脱敏：去除数据库连接中的账号密码

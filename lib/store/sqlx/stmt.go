@@ -2,7 +2,7 @@ package sqlx
 
 import (
 	"database/sql"
-	"log"
+	"goa/lib/logx"
 	"time"
 )
 
@@ -18,11 +18,10 @@ func doQuery(db session, scanner func(*sql.Rows) error, query string, args ...in
 	rows, err := db.Query(query, args...)
 	duration := time.Since(startTime)
 
-	// TODO 日志开关控制 atomic
 	if duration > slowThreshold {
-		log.Printf("[SQL] 慢查询(%v) - %s", duration, stmt)
+		logx.WithDuration(duration).Slowf("[SQL] 慢查询(%v) - %s", duration, stmt)
 	} else {
-		log.Printf("[SQL] 查询: %s", stmt)
+		logx.WithDuration(duration).Infof("[SQL] 查询: %s", stmt)
 	}
 
 	if err != nil {
@@ -48,9 +47,9 @@ func doExec(db session, query string, args ...interface{}) (sql.Result, error) {
 
 	// TODO 日志开关控制 atomic
 	if duration > slowThreshold {
-		log.Printf("[SQL] 慢执行(%v) - %s", duration, stmt)
+		logx.WithDuration(duration).Slowf("[SQL] 慢执行(%v) - %s", duration, stmt)
 	} else {
-		log.Printf("[SQL] 执行: %s", stmt)
+		logx.WithDuration(duration).Infof("[SQL] 执行: %s", stmt)
 	}
 
 	if err != nil {

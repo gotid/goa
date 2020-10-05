@@ -10,6 +10,19 @@ import (
 	"time"
 )
 
+const (
+	// 最大批量插入数量
+	maxBulkRows = 1000
+
+	// SQL 中的 values 标记
+	valuesTag = "values"
+
+	// 定期执行程序的的间隔执行时间
+	flushInterval = time.Second
+)
+
+var emptyBulkStmt bulkStmt
+
 type (
 	// 批量插入器结构
 	BulkInserter struct {
@@ -47,19 +60,6 @@ type (
 	// 执行结果处理器
 	ResultHandler func(sql.Result, error)
 )
-
-const (
-	// 最大批量插入数量
-	maxBulkRows = 2
-
-	// SQL 中的 values 标记
-	valuesTag = "values"
-
-	// 定期执行程序的的间隔执行时间
-	flushInterval = time.Second
-)
-
-var emptyBulkStmt bulkStmt
 
 // NewBulkInserter 新建批量插入器
 func NewBulkInserter(c Conn, stmt string) (*BulkInserter, error) {
@@ -140,8 +140,6 @@ func (m *insertManager) Execute(rows interface{}) {
 	if len(m.stmt.suffix) > 0 {
 		stmt = strings.Join([]string{stmt, m.stmt.suffix}, " ")
 	}
-
-	logx.Infof("测试SQL: %s", stmt)
 
 	// 真正执行插入
 	result, err := m.conn.Exec(stmt)

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"goa/lib/logx"
+	"runtime"
 	"strconv"
 	"testing"
 )
@@ -47,6 +49,8 @@ func TestBulkInserter_Insert(t *testing.T) {
 }
 
 func TestBulkInserter_Suffix(t *testing.T) {
+	//logx.Disable()
+	logx.SetLevel(logx.ErrorLevel)
 	//runSqlTest(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
 	runSqlTest(t, func(conn Conn) {
 		//var conn mockedConn
@@ -54,7 +58,13 @@ func TestBulkInserter_Suffix(t *testing.T) {
 			`(?, ?, ?) ON DUPLICATE KEY UPDATE is_overtime=VALUES(is_overtime)`)
 		assert.Nil(t, err)
 
-		for i := 0; i < 50; i++ {
+		inserter.SetRequestHandler(func(result sql.Result, err error) {
+			affected, err := result.RowsAffected()
+			insertId, err := result.LastInsertId()
+			logx.Infof("协程数量：%d, 影响行数：%d, 返回编号：%d", runtime.NumGoroutine(), affected, insertId)
+		})
+
+		for i := 2934000; i < 5000000; i++ {
 			assert.Nil(t, inserter.Insert("class_"+strconv.Itoa(i), "user_"+strconv.Itoa(i), i))
 		}
 		inserter.Flush()

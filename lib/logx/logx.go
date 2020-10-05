@@ -18,11 +18,13 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
 	// 日志级别值
 	InfoLevel = iota
+	SlowLevel
 	ErrorLevel
 	FatalLevel
 )
@@ -43,10 +45,10 @@ const (
 	statFilename   = "stat.log"
 
 	// 日志模式
-	consoleMode = "console" // 命令行模式
-	volumeMode  = "volume"  // TODO ？
+	consoleMode = "console"
+	volumeMode  = "volume"
 
-	timeFormat          = "2000-01-01T10:00:00.000Z08" // 日期格式
+	timeFormat          = "2006-01-02T11:52:03.000Z07" // 日期格式
 	callerInnerDepth    = 5                            // 堆栈调用深度
 	flags               = 0x0
 	backupFileDelimiter = "-" // 日志备份文件分隔符
@@ -89,10 +91,31 @@ type (
 	}
 
 	LogOption func(options *logOptions)
+
+	// 用于 durationLogger/traceLogger
+	Logger interface {
+		Info(...interface{})
+		Infof(string, ...interface{})
+		Error(...interface{})
+		Errorf(string, ...interface{})
+		Slow(...interface{})
+		Slowf(string, ...interface{})
+		WithDuration(time.Duration) Logger
+	}
 )
 
-func SetLevel(level uint32) {
-	atomic.StoreUint32(&logLevel, level)
+// MustSetup 必须成功不能有错，否则直接退出系统
+func MustSetup(c LogConf) {
+	Must(Setup(c))
+}
+
+func Must(err error) {
+	if err != nil {
+		msg := formatWithCaller(err.Error(), 3)
+		log.Print(msg)
+		output(fatalLogger, fatalLevel, msg)
+		os.Exit(1)
+	}
 }
 
 func Setup(c LogConf) error {
@@ -105,6 +128,46 @@ func Setup(c LogConf) error {
 	default:
 		return setupWithFile(c)
 	}
+}
+
+func Close() error {
+	if writeConsole {
+		return nil
+	}
+
+	if atomic.LoadUint32(&initialized) == 0 {
+		return ErrLogNotInitialized
+	}
+
+	atomic.StoreUint32(&initialized, 0)
+
+	loggers := []io.WriteCloser{infoLogger, errorLogger, fatalLogger, slowLogger, statLogger}
+	for _, logger := range loggers {
+		if logger != nil {
+			if err := infoLogger.Close(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func Disable() {
+	once.Do(func() {
+		atomic.StoreUint32(&initialized, 1)
+
+		infoLogger = iox.NopCloser(ioutil.Discard)
+		errorLogger = iox.NopCloser(ioutil.Discard)
+		fatalLogger = iox.NopCloser(ioutil.Discard)
+		slowLogger = iox.NopCloser(ioutil.Discard)
+		statLogger = iox.NopCloser(ioutil.Discard)
+		stackLogger = ioutil.Discard
+	})
+}
+
+func SetLevel(level uint32) {
+	atomic.StoreUint32(&logLevel, level)
 }
 
 func WithKeepDays(days int) LogOption {
@@ -123,20 +186,6 @@ func WithCooldownMillis(millis int) LogOption {
 	return func(opts *logOptions) {
 		opts.logStackCooldownMills = millis
 	}
-}
-
-// Disable 禁用所有日志，将输出变为空操作
-func Disable() {
-	once.Do(func() {
-		atomic.StoreUint32(&initialized, 1)
-
-		infoLogger = iox.NopCloser(ioutil.Discard)
-		errorLogger = iox.NopCloser(ioutil.Discard)
-		fatalLogger = iox.NopCloser(ioutil.Discard)
-		slowLogger = iox.NopCloser(ioutil.Discard)
-		statLogger = iox.NopCloser(ioutil.Discard)
-		stackLogger = ioutil.Discard
-	})
 }
 
 func Info(v ...interface{}) {
@@ -167,10 +216,29 @@ func ErrorStack(v ...interface{}) {
 	syncStack(fmt.Sprint(v...))
 }
 
-func handleOptions(opts []LogOption) {
-	for _, opt := range opts {
-		opt(&options)
+func Stat(v ...interface{}) {
+	syncStat(fmt.Sprint(v...))
+}
+
+func Statf(format string, v ...interface{}) {
+	syncStat(fmt.Sprintf(format, v...))
+}
+
+func setupLogLevel(c LogConf) {
+	switch c.Level {
+	case infoLevel:
+		SetLevel(InfoLevel)
+	case slowLevel:
+		SetLevel(SlowLevel)
+	case errorLevel:
+		SetLevel(ErrorLevel)
+	case fatalLevel:
+		SetLevel(FatalLevel)
 	}
+}
+
+func shouldLog(level uint32) bool {
+	return atomic.LoadUint32(&logLevel) <= level
 }
 
 func setupWithConsole(c LogConf) {
@@ -246,6 +314,12 @@ func setupWithVolume(c LogConf) error {
 	return setupWithFile(c)
 }
 
+func handleOptions(opts []LogOption) {
+	for _, opt := range opts {
+		opt(&options)
+	}
+}
+
 func createOutput(filename string) (io.WriteCloser, error) {
 	if len(filename) == 0 {
 		return nil, ErrLogPathNotSet
@@ -260,18 +334,22 @@ func createOutput(filename string) (io.WriteCloser, error) {
 
 func syncInfo(msg string) {
 	if shouldLog(InfoLevel) {
+		output(infoLogger, infoLevel, msg)
 	}
-}
-
-// shouldLog 对比日志级别确定是否需要记录
-func shouldLog(level uint32) bool {
-	return atomic.LoadUint32(&logLevel) <= level
 }
 
 func syncError(msg string, callDepth int) {
 	if shouldLog(ErrorLevel) {
 		outputError(errorLogger, msg, callDepth)
 	}
+}
+
+func syncStack(msg string) {
+	output(stackLogger, errorLevel, fmt.Sprintf("%s\n%s", msg, string(debug.Stack())))
+}
+
+func syncStat(msg string) {
+	output(statLogger, statLevel, msg)
 }
 
 func outputError(writer io.WriteCloser, msg string, callDepth int) {
@@ -312,10 +390,6 @@ func getCaller(callDepth int) string {
 	return b.String()
 }
 
-func syncStack(msg string) {
-	output(stackLogger, errorLevel, fmt.Sprintf("%s\n%s", msg, string(debug.Stack())))
-}
-
 func output(writer io.Writer, level, msg string) {
 	outputJson(writer, logEntry{
 		Timestamp: getTimestamp(),
@@ -324,28 +398,16 @@ func output(writer io.Writer, level, msg string) {
 	})
 }
 
-func outputJson(writer io.Writer, e logEntry) {
-	if content, err := json.Marshal(e); err != nil {
+func outputJson(writer io.Writer, entry logEntry) {
+	if content, err := json.Marshal(entry); err != nil {
 		log.Println(err.Error())
 	} else if atomic.LoadUint32(&initialized) == 0 || writer == nil {
 		log.Println(string(content))
 	} else {
-		n, err := writer.Write(append(content, '\n'))
-		log.Printf("写日志错误(%d): %v\n", n, err)
+		writer.Write(append(content, '\n'))
 	}
 }
 
 func getTimestamp() string {
 	return timex.Time().Format(timeFormat)
-}
-
-func setupLogLevel(c LogConf) {
-	switch c.Level {
-	case infoLevel:
-		SetLevel(InfoLevel)
-	case errorLevel:
-		SetLevel(ErrorLevel)
-	case fatalLevel:
-		SetLevel(FatalLevel)
-	}
 }
