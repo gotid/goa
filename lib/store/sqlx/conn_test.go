@@ -85,14 +85,3 @@ func TestDbInstance_Exec(t *testing.T) {
 	rowsAffected, _ := result.RowsAffected()
 	fmt.Printf("LastInsertId: %d, RowsAffected: %d\n", lastInsertId, rowsAffected)
 }
-
-//func TestDbInstance_Prepare(t *testing.T) {
-//	dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true"
-//	db := NewMySQL(dataSourceName)
-//
-//	session, err := db.Prepare("select count(0) total from book")
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	session.Query()
-//}

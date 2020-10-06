@@ -28,7 +28,9 @@ func doQuery(db session, scanner func(*sql.Rows) error, query string, args ...in
 		logSqlError(stmt, err)
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	return scanner(rows)
 }
@@ -58,28 +60,3 @@ func doExec(db session, query string, args ...interface{}) (sql.Result, error) {
 
 	return result, err
 }
-
-//func doStmtQuery(conn stmtConn, scanner func(*sql.Rows) error, args ...interface{}) error {
-//	// 格式化后的查询字符串
-//	stmt := fmt.Sprint(args...)
-//
-//	// 带有慢查询检测
-//	startTime := time.Now()
-//	rows, err := conn.Query(args...)
-//	duration := time.Since(startTime)
-//
-//	// TODO 日志开关控制 atomic
-//	if duration > slowThreshold {
-//		log.Printf("[SQL] 慢查询(%v) - %s", duration, stmt)
-//	} else {
-//		log.Printf("[SQL] 查询: %s", stmt)
-//	}
-//
-//	if err != nil {
-//		logSqlError(stmt, err)
-//		return err
-//	}
-//	defer rows.Close()
-//
-//	return scanner(rows)
-//}

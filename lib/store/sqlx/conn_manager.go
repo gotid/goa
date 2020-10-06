@@ -23,7 +23,6 @@ type cachedConn struct {
 }
 
 // getConn 从缓存池中获取可复用的数据库
-// TODO 待考虑 Conn 自动故障迁移
 func getConn(driverName, dataSourceName string) (*sql.DB, error) {
 	conn, err := getCachedConn(driverName, dataSourceName)
 	if err != nil {

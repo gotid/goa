@@ -22,7 +22,7 @@ func TestTxSession_Exec(t *testing.T) {
 		uid, err = result.LastInsertId()
 
 		// 插入用户库——档案表
-		_, err = tx.Exec("insert into nest_user.profile(id, kind, nickname) values(?, 1, '测试小号2')", uid)
+		_, err = tx.Exec("insert into nest_user.profile(id, kind, nickname) values(?, 1, '测试小号3')", uid)
 		if err != nil {
 			panic(err)
 			return err

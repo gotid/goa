@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// tagName 结构体字段中，数据库字段的标记名称
+	// 结构体字段中，数据库字段的标记名称
 	tagName = "db"
 
 	// 数据库慢日志阈值，用于记录慢查询和慢执行
@@ -22,38 +22,19 @@ var (
 )
 
 type (
-	// StmtConn 语句执行和查询接口
-	//StmtConn interface {
-	//	Query(dest interface{}, args ...interface{}) error
-	//	Execute(args ...interface{}) (sql.Result, error)
-	//	Close() error
-	//}
-
-	// stmtConn 预编译连接
-	//stmtConn interface {
-	//	Query(args ...interface{}) (*sql.Rows, error)
-	//	Execute(args ...interface{}) (sql.Result, error)
-	//}
-
-	// statement 预编译语句会话：将查询封装为预编译语句，供底层查询和执行
-	//statement struct {
-	//	stmt *sql.Stmt
-	//}
-
 	// Session 提供外部查询和执行的会话接口
 	Session interface {
 		Query(dest interface{}, query string, args ...interface{}) error
 		Exec(query string, args ...interface{}) (sql.Result, error)
-		//Prepare(valueFormat string) (StmtConn, error)
 	}
 
-	// session 提供内部查询和执行的会话接口
+	// 提供内部查询和执行的会话接口
 	session interface {
 		Query(query string, args ...interface{}) (*sql.Rows, error)
 		Exec(query string, args ...interface{}) (sql.Result, error)
 	}
 
-	// TransactFn 事务内执行函数，传入事务会话
+	// TransactFn 事务内部执行函数，传入事务会话
 	TransactFn func(tx Session) error
 
 	// Conn 提供外部数据库会话和事务的接口
@@ -62,7 +43,7 @@ type (
 		Transact(fn TransactFn) error
 	}
 
-	// conn 包内连接实例，封装查询、执行、事务及断路器支持
+	// conn 内部使用的数据库连接，封装查询、执行、事务及断路器支持
 	conn struct {
 		driverName     string    // 驱动名称，支持 mysql/postgres/clickhouse 等 sql-like
 		dataSourceName string    // 数据源名称 Data Source Name，既数据库连接字符串
@@ -88,9 +69,6 @@ func NewConn(driverName, dataSourceName string, opts ...Option) Conn {
 	return c
 }
 
-// ----------------- conn 实现方法 ↓ ----------------- //
-
-// Query 执行数据库查询并将结果扫描至结果。
 // 如果 dest 字段不写tag的话，系统按顺序配对，此时需要与sql中的查询字段顺序一致
 // 如果 dest 字段写了tag的话，系统按名称配对，此时可以和sql中的查询字段顺序不同
 func (c *conn) Query(dest interface{}, query string, args ...interface{}) error {
@@ -116,30 +94,3 @@ func (c *conn) Exec(query string, args ...interface{}) (sql.Result, error) {
 func (c *conn) Transact(fn TransactFn) error {
 	return doTx(c, c.beginTx, fn)
 }
-
-// Prepare 创建一个稍后查询或执行的预编译语句
-//func (c *conn) Prepare(valueFormat string) (stmt StmtConn, err error) {
-//	db, err := getConn(c.driverName, c.dataSourceName)
-//	if err != nil {
-//		logConnError(c.dataSourceName, err)
-//		return nil, err
-//	}
-//	if st, err := db.Prepare(valueFormat); err != nil {
-//		return nil, err
-//	} else {
-//		stmt = statement{stmt: st}
-//		return stmt, nil
-//	}
-//}
-
-//func (s statement) Query(dest interface{}, args ...interface{}) error {
-//	panic("implement me")
-//}
-//
-//func (s statement) Execute(args ...interface{}) (sql.Result, error) {
-//	panic("implement me")
-//}
-//
-//func (s statement) Close() error {
-//	panic("implement me")
-//}

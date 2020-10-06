@@ -216,6 +216,18 @@ func ErrorStack(v ...interface{}) {
 	syncStack(fmt.Sprint(v...))
 }
 
+func Fatalf(format string, args ...interface{}) {
+	syncFatal(fmt.Sprintf(format, args...))
+}
+
+func Slow(v ...interface{}) {
+	syncSlow(fmt.Sprint(v...))
+}
+
+func Slowf(format string, v ...interface{}) {
+	syncSlow(fmt.Sprintf(format, v...))
+}
+
 func Stat(v ...interface{}) {
 	syncStat(fmt.Sprint(v...))
 }
@@ -346,6 +358,18 @@ func syncError(msg string, callDepth int) {
 
 func syncStack(msg string) {
 	output(stackLogger, errorLevel, fmt.Sprintf("%s\n%s", msg, string(debug.Stack())))
+}
+
+func syncFatal(msg string) {
+	if shouldLog(FatalLevel) {
+		output(fatalLogger, fatalLevel, fmt.Sprintf("%s\n%s", msg, string(debug.Stack())))
+	}
+}
+
+func syncSlow(msg string) {
+	if shouldLog(SlowLevel) {
+		output(slowLogger, slowLevel, msg)
+	}
 }
 
 func syncStat(msg string) {

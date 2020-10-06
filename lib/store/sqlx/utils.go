@@ -104,7 +104,7 @@ func prefectDSN(dataSourceName *string) {
 
 func logSqlError(sql string, err error) {
 	if err != nil && err != ErrNotFound {
-		logx.Errorf("[SQL] %s \n错误: %s", sql, err.Error())
+		logx.Errorf("[SQL] %s >>> %s", err.Error(), sql)
 	}
 }
 
