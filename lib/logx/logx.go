@@ -48,7 +48,7 @@ const (
 	consoleMode = "console"
 	volumeMode  = "volume"
 
-	timeFormat          = "2006-01-02T11:52:03.000Z07" // 日期格式
+	timeFormat          = "2006-01-02T15:04:05.000Z07" // 日期格式
 	callerInnerDepth    = 5                            // 堆栈调用深度
 	flags               = 0x0
 	backupFileDelimiter = "-" // 日志备份文件分隔符

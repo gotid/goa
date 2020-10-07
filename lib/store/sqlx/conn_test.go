@@ -77,11 +77,27 @@ func TestDbInstance_QueryRows(t *testing.T) {
 func TestDbInstance_Exec(t *testing.T) {
 	dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true"
 	db := NewMySQL(dataSourceName)
-	result, err := db.Exec("update nest_admin.admin_user set txt='自在测试' where id=?", 6)
+	result, err := db.Exec("update nest_admin.admin_user set txt='自在测试1007' where id=?", 6)
 	if err != nil {
 		t.Fatal(err)
 	}
 	lastInsertId, _ := result.LastInsertId()
 	rowsAffected, _ := result.RowsAffected()
 	fmt.Printf("LastInsertId: %d, RowsAffected: %d\n", lastInsertId, rowsAffected)
+}
+
+func TestConnBreaker(t *testing.T) {
+	//logx.Disable()
+	//logx.SetLevel(logx.ErrorLevel)
+	//dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true&timeout=10s&readTimeout=2s"
+	//dataSourceName := "root:asdfasdf@tcp(218.244.143.31:3317)/nest_label?parseTime=true&timeout=10s&readTimeout=2s"
+	dataSourceName := "root:asdfasdf@tcp(218.244.143.31:3317)/nest_label?parseTime=true"
+	db := NewMySQL(dataSourceName)
+	var book struct {
+		Book string `db:"book"`
+	}
+
+	for i := 0; i < 10000; i++ {
+		_ = db.Query(&book, "select book from book limit 1")
+	}
 }

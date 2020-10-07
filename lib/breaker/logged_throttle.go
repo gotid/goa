@@ -13,6 +13,7 @@ type (
 		Reject()
 	}
 
+	// 内部节流阀接口，如 google_throttle 实现
 	internalThrottle interface {
 		allow() (internalPromise, error)
 		doReq(req Request, fallback Fallback, acceptable Acceptable) error
@@ -59,7 +60,7 @@ func (t loggedThrottle) doReq(req Request, fallback Fallback, acceptable Accepta
 func (t loggedThrottle) logError(err error) error {
 	if err == ErrServiceUnavaliable {
 		stat.Report(fmt.Sprintf(
-			"proc(%s/%d), caller: %s, 断路器已打开，请求被丢弃\n最新错误：\n%s",
+			"进程(%s/%d), 调用者名称: %s, 断路器已打开，请求被丢弃\n最新错误：\n%s",
 			proc.ProcessName(), proc.Pid(), t.name, t.errWin))
 	}
 	return err

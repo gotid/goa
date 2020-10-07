@@ -13,11 +13,11 @@ const (
 var ErrServiceUnavaliable = errors.New("断路器已打开，服务不可用")
 
 type (
-	State      = int32               // 断路器状态
-	Request    func() error          // 待执行的请求
-	Acceptable func(err error) bool  // 判断错误是否可接受的函数
-	Fallback   func(err error) error // 应急备用函数
-	Option     func(b *breaker)      // 断路器可选项应用函数
+	State      = int32                     // 断路器状态
+	Request    func() error                // 待执行的请求
+	Acceptable func(reqError error) bool   // 判断错误是否可接受的函数
+	Fallback   func(acceptErr error) error // 应急备用函数
+	Option     func(b *breaker)            // 断路器可选项应用函数
 
 	Breaker interface {
 		// Name 是 netflixBreaker 断路器的名称

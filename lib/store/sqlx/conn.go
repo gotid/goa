@@ -3,6 +3,8 @@ package sqlx
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"goa/lib/breaker"
 	"time"
 )
 
@@ -45,9 +47,11 @@ type (
 
 	// conn 内部使用的数据库连接，封装查询、执行、事务及断路器支持
 	conn struct {
-		driverName     string    // 驱动名称，支持 mysql/postgres/clickhouse 等 sql-like
-		dataSourceName string    // 数据源名称 Data Source Name，既数据库连接字符串
-		beginTx        beginTxFn // 可开始事务
+		driverName     string          // 驱动名称，支持 mysql/postgres/clickhouse 等 sql-like
+		dataSourceName string          // 数据源名称 Data Source Name，既数据库连接字符串
+		beginTx        beginTxFn       // 可开始事务
+		brk            breaker.Breaker // 断路器，用于后端故障拒绝服务
+		accept         func(reqError error) bool
 	}
 
 	// Option 是一个可选的数据库增强函数
@@ -62,6 +66,7 @@ func NewConn(driverName, dataSourceName string, opts ...Option) Conn {
 		driverName:     driverName,
 		dataSourceName: dataSourceName,
 		beginTx:        beginTx,
+		brk:            breaker.NewBreaker(),
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -72,14 +77,26 @@ func NewConn(driverName, dataSourceName string, opts ...Option) Conn {
 // 如果 dest 字段不写tag的话，系统按顺序配对，此时需要与sql中的查询字段顺序一致
 // 如果 dest 字段写了tag的话，系统按名称配对，此时可以和sql中的查询字段顺序不同
 func (c *conn) Query(dest interface{}, query string, args ...interface{}) error {
-	db, err := getConn(c.driverName, c.dataSourceName)
-	if err != nil {
-		logConnError(c.dataSourceName, err)
-		return err
-	}
-	return doQuery(db, func(rows *sql.Rows) error {
-		return scan(rows, dest)
-	}, query, args...)
+	var scanError error
+	return c.brk.DoWithAcceptable(func() error {
+		fmt.Println("获取连接并执行数据库操作")
+		fmt.Println()
+
+		// 获取数据库连接
+		db, err := getConn(c.driverName, c.dataSourceName)
+		if err != nil {
+			logConnError(c.dataSourceName, err)
+			return err
+		}
+
+		// 执行数据库查询
+		return doQuery(db, func(rows *sql.Rows) error {
+			scanError = scan(rows, dest)
+			return scanError
+		}, query, args...)
+	}, func(reqError error) bool {
+		return reqError == scanError || c.acceptable(reqError)
+	})
 }
 
 func (c *conn) Exec(query string, args ...interface{}) (sql.Result, error) {
@@ -93,4 +110,15 @@ func (c *conn) Exec(query string, args ...interface{}) (sql.Result, error) {
 
 func (c *conn) Transact(fn TransactFn) error {
 	return doTx(c, c.beginTx, fn)
+}
+
+func (c *conn) acceptable(reqError error) bool {
+	ok := reqError == nil ||
+		reqError == sql.ErrNoRows ||
+		reqError == sql.ErrTxDone
+	if c.accept == nil {
+		return ok
+	} else {
+		return ok || c.accept(reqError)
+	}
 }

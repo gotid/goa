@@ -34,7 +34,7 @@ func TestGoogleBreaker_Open(t *testing.T) {
 	b := getGoogleBreaker()
 	markSuccess(b, 10)
 	assert.Nil(t, b.accept())
-	markFailed(b, 100) // 模拟很多个失败请求，从而使用断路器保护
+	markFailed(b, 10000) // 模拟很多个失败请求，从而使用断路器保护
 	time.Sleep(2 * testInterval)
 	win := b.stat.Win()
 	fmt.Println(win.Buckets())
@@ -178,7 +178,7 @@ func TestGoogleBreakerSelfProtection(t *testing.T) {
 }
 
 func TestGoogleBreakerHistory(t *testing.T) {
-	var b *googleBreaker
+	var b *googleThrottle
 	var requests, accepts int64
 
 	sleep := testInterval
@@ -229,8 +229,8 @@ func BenchmarkGoogleBreakerAllow(b *testing.B) {
 	}
 }
 
-func getGoogleBreaker() *googleBreaker {
-	return &googleBreaker{
+func getGoogleBreaker() *googleThrottle {
+	return &googleThrottle{
 		k:     5,
 		state: StateClosed,
 		stat:  container.NewRollingWindow(testBuckets, testInterval),
@@ -238,7 +238,7 @@ func getGoogleBreaker() *googleBreaker {
 	}
 }
 
-func markSuccess(b *googleBreaker, count int) {
+func markSuccess(b *googleThrottle, count int) {
 	for i := 0; i < count; i++ {
 		promise, err := b.allow()
 		if err != nil {
@@ -248,7 +248,7 @@ func markSuccess(b *googleBreaker, count int) {
 	}
 }
 
-func markFailed(b *googleBreaker, count int) {
+func markFailed(b *googleThrottle, count int) {
 	for i := 0; i < count; i++ {
 		p, err := b.allow()
 		if err == nil {
@@ -268,14 +268,14 @@ func verify(t *testing.T, fn func() bool) {
 	assert.True(t, count >= 80, fmt.Sprintf("应大于80，实际为 %d", count))
 }
 
-func markSuccessWithDuration(b *googleBreaker, count int, sleep time.Duration) {
+func markSuccessWithDuration(b *googleThrottle, count int, sleep time.Duration) {
 	for i := 0; i < count; i++ {
 		b.markSuccess()
 		time.Sleep(sleep)
 	}
 }
 
-func markFailedWithDuration(b *googleBreaker, count int, sleep time.Duration) {
+func markFailedWithDuration(b *googleThrottle, count int, sleep time.Duration) {
 	for i := 0; i < count; i++ {
 		b.markFailure()
 		time.Sleep(sleep)
