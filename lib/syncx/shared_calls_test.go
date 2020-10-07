@@ -10,7 +10,7 @@ import (
 )
 
 func TestCachedCalls_Get(t *testing.T) {
-	calls := NewCachedCalls()
+	calls := NewSharedCalls()
 	result, hit, err := calls.Get("ping", func() (result interface{}, err error) {
 		return "pong", nil
 	})
@@ -25,7 +25,7 @@ func TestCachedCalls_Get(t *testing.T) {
 }
 
 func TestCachedCalls_GetErr(t *testing.T) {
-	calls := NewCachedCalls()
+	calls := NewSharedCalls()
 	someErr := errors.New("一些错误")
 	result, _, err := calls.Get("ping", func() (result interface{}, err error) {
 		return nil, someErr
@@ -39,7 +39,7 @@ func TestCachedCalls_GetErr(t *testing.T) {
 }
 
 func TestExclusiveCallDoDupSuppress(t *testing.T) {
-	calls := NewCachedCalls()
+	calls := NewSharedCalls()
 	c := make(chan string)
 	var callCounter int32
 	fn := func() (interface{}, error) {

@@ -1,7 +1,6 @@
 package breaker
 
 import (
-	"fmt"
 	"goa/lib/container"
 	"goa/lib/logx"
 	"goa/lib/mathx"
@@ -12,10 +11,10 @@ import (
 
 const (
 	window  = 10 * time.Second // 一个滚动窗时长，默认10秒
-	buckets = 1                // 一个滚动窗允许通过的桶数，默认40个
+	buckets = 40               // 一个滚动窗允许通过的桶数，默认40个
 
-	K          = 1.1 // 请求接受比例，越大接受度则越高，越小自适应节流则越积极
-	protection = 1   // 保护的请求数
+	K          = 1.5 // 请求接受比例，越大接受度则越高，越小自适应节流则越积极
+	protection = 5   // 自我保护的请求数
 )
 
 type (
@@ -93,16 +92,15 @@ func (t *googleThrottle) accept() error {
 	// https://landing.google.com/sre/sre-book/chapters/handling-overload/#eq2101
 	// 常量 K 为1.5意味着，请求150次只成功100次，则
 	weightedAccepts := t.k * float64(accepts)
-	//droppedRequests := float64(requests-protection) - weightedAccepts
-	droppedRequests := float64(requests) - weightedAccepts
+	droppedRequests := float64(requests-protection) - weightedAccepts
+	//droppedRequests := float64(requests) - weightedAccepts
 	dropRatio := math.Max(0, droppedRequests/float64(requests+1))
 
-	fmt.Printf("dropRation = max(0, (%d-%.0f*%d)/(%d+1)) -> %f\n", requests, t.k, accepts, requests, dropRatio)
+	logx.Statf("dropRation = max(0, ((%d-%d)-%.0f*%d)/(%d+1)) --- %f", requests, protection, t.k, accepts, requests, dropRatio)
 
 	// 无需拒绝
 	if dropRatio <= 0 {
 		if atomic.LoadInt32(&t.state) == StateOpen {
-			logx.Error("关闭断路器")
 			atomic.CompareAndSwapInt32(&t.state, StateOpen, StateClosed)
 		}
 		return nil
@@ -110,13 +108,12 @@ func (t *googleThrottle) accept() error {
 
 	// 未开断路器，则需打开
 	if atomic.LoadInt32(&t.state) == StateClosed {
-		logx.Error("打开断路器")
 		atomic.CompareAndSwapInt32(&t.state, StateClosed, StateOpen)
-
 	}
 
 	// 并非每次阻断，而是随机拦截，以此给后端重生的机会
 	if t.prob.TrueOnProb(dropRatio) {
+		logx.Error("打开断路器并返回错误")
 		return ErrServiceUnavaliable
 	}
 

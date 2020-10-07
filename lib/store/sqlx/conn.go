@@ -79,7 +79,7 @@ func NewConn(driverName, dataSourceName string, opts ...Option) Conn {
 func (c *conn) Query(dest interface{}, query string, args ...interface{}) error {
 	var scanError error
 	return c.brk.DoWithAcceptable(func() error {
-		fmt.Println("获取连接并执行数据库操作")
+		fmt.Println("获取连接并做数据库查询")
 		fmt.Println()
 
 		// 获取数据库连接
@@ -89,7 +89,7 @@ func (c *conn) Query(dest interface{}, query string, args ...interface{}) error 
 			return err
 		}
 
-		// 执行数据库查询
+		// 做数据库查询
 		return doQuery(db, func(rows *sql.Rows) error {
 			scanError = scan(rows, dest)
 			return scanError
@@ -99,17 +99,31 @@ func (c *conn) Query(dest interface{}, query string, args ...interface{}) error 
 	})
 }
 
-func (c *conn) Exec(query string, args ...interface{}) (sql.Result, error) {
-	db, err := getConn(c.driverName, c.dataSourceName)
-	if err != nil {
-		logConnError(c.dataSourceName, err)
-		return nil, err
-	}
-	return doExec(db, query, args...)
+func (c *conn) Exec(query string, args ...interface{}) (result sql.Result, err error) {
+	err = c.brk.DoWithAcceptable(func() error {
+		fmt.Println("获取连接并做数据库执行")
+		fmt.Println()
+
+		// 获取数据库连接
+		db, err := getConn(c.driverName, c.dataSourceName)
+		if err != nil {
+			logConnError(c.dataSourceName, err)
+			return err
+		}
+
+		// 做数据库执行
+		result, err = doExec(db, query, args...)
+		return err
+	}, c.acceptable)
+	return
 }
 
 func (c *conn) Transact(fn TransactFn) error {
-	return doTx(c, c.beginTx, fn)
+	return c.brk.DoWithAcceptable(func() error {
+		fmt.Println("获取连接并做数据库事务")
+		fmt.Println()
+		return doTx(c, c.beginTx, fn)
+	}, c.acceptable)
 }
 
 func (c *conn) acceptable(reqError error) bool {
