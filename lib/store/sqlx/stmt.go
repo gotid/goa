@@ -19,7 +19,7 @@ func doQuery(db session, scanner func(*sql.Rows) error, query string, args ...in
 	duration := time.Since(startTime)
 
 	if duration > slowThreshold {
-		logx.WithDuration(duration).Slowf("[SQL] 慢查询(%v) - %s", duration, stmt)
+		logx.WithDuration(duration).Slowf("[SQL] 慢查询 - %s", stmt)
 	} else {
 		logx.WithDuration(duration).Infof("[SQL] 查询: %s", stmt)
 	}
