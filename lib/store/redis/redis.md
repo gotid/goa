@@ -1,0 +1,1 @@
+[Redis 部署模式](https://www.zhangaoo.com/article/redis-cluster-sentinel)
