@@ -16,7 +16,7 @@ func TestConf_Validate(t *testing.T) {
 			name: "缺失主机",
 			Conf: Conf{
 				Host:     "",
-				Mode:     NodeType,
+				Mode:     StandaloneMode,
 				Password: "",
 			},
 			ok: false,
@@ -34,7 +34,7 @@ func TestConf_Validate(t *testing.T) {
 			name: "正常",
 			Conf: Conf{
 				Host:     "localhost:6379",
-				Mode:     NodeType,
+				Mode:     StandaloneMode,
 				Password: "",
 			},
 			ok: true,
@@ -62,7 +62,7 @@ func TestKeyConf_Validate(t *testing.T) {
 			KeyConf: KeyConf{
 				Conf: Conf{
 					Host:     "",
-					Mode:     NodeType,
+					Mode:     StandaloneMode,
 					Password: "",
 				},
 				Key: "",
@@ -86,7 +86,7 @@ func TestKeyConf_Validate(t *testing.T) {
 			KeyConf: KeyConf{
 				Conf: Conf{
 					Host:     "localhost:6379",
-					Mode:     NodeType,
+					Mode:     StandaloneMode,
 					Password: "",
 				},
 				Key: "foo",

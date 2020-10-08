@@ -36,11 +36,17 @@ type (
 	}
 )
 
-func NewRedis(addr, mode, password string) *Redis {
+func NewRedis(addr, mode string, password ...string) *Redis {
+	// 为了支持不提供 password 的情况
+	var pwd string
+	for _, v := range password {
+		pwd = v
+	}
+
 	return &Redis{
 		Addr:     addr,
 		Mode:     mode,
-		Password: password,
+		Password: pwd,
 		brk:      breaker.NewBreaker(),
 	}
 }

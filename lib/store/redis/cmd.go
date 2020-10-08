@@ -34,7 +34,7 @@ func (r *Redis) BLPop(conn Client, key string) (string, error) {
 }
 
 // Del 时间复杂度 O(N)，当删除的key是字符串意外的复杂类型如List、Set、Hash等则为 O(1)
-func (r *Redis) Del(keys ...string) (result int, err error) {
+func (r *Redis) Del(keys ...string) (length int, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -45,7 +45,7 @@ func (r *Redis) Del(keys ...string) (result int, err error) {
 		if err != nil {
 			return err
 		}
-		result = int(v)
+		length = int(v)
 		return nil
 	}, acceptable)
 	return
@@ -67,7 +67,7 @@ func (r *Redis) Eval(script string, keys []string, args ...interface{}) (result 
 }
 
 // Exists 判断 key 是否存在
-func (r *Redis) Exists(key string) (result bool, err error) {
+func (r *Redis) Exists(key string) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -78,7 +78,7 @@ func (r *Redis) Exists(key string) (result bool, err error) {
 		if err != nil {
 			return err
 		}
-		result = v == 1 // 1 存在，0 不存在
+		ok = v == 1 // 1 存在，0 不存在
 		return nil
 	}, acceptable)
 
@@ -147,7 +147,7 @@ func (r *Redis) GetBit(key string, offset int64) (result int, err error) {
 }
 
 // HDel 从 key 指定的哈希集合中删除指定 field。成功返回1，失败返回0。
-func (r *Redis) HDel(key, field string) (result bool, err error) {
+func (r *Redis) HDel(key, field string) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -158,7 +158,7 @@ func (r *Redis) HDel(key, field string) (result bool, err error) {
 		if err != nil {
 			return err
 		}
-		result = v == 1
+		ok = v == 1
 		return nil
 	}, acceptable)
 
@@ -166,13 +166,13 @@ func (r *Redis) HDel(key, field string) (result bool, err error) {
 }
 
 // HExists 判断指定 key 的哈希中 field 是否存在，存在返1，否则返0
-func (r *Redis) HExists(key, field string) (result bool, err error) {
+func (r *Redis) HExists(key, field string) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
-		result, err = client.HExists(key, field).Result()
+		ok, err = client.HExists(key, field).Result()
 		return err
 	}, acceptable)
 
@@ -243,7 +243,7 @@ func (r *Redis) HKeys(key string) (fields []string, err error) {
 }
 
 // HLen 返回 key 指定的哈希的字段数量。
-func (r *Redis) Hlen(key string) (size int, err error) {
+func (r *Redis) HLen(key string) (size int, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -293,14 +293,14 @@ func (r *Redis) HSet(key, field, value string) error {
 }
 
 // HSetNX 只在 key 指定的哈希集中不存在指定的字段时，设置字段的值。
-func (r *Redis) HSetNX(key, field, value string) (val bool, err error) {
+func (r *Redis) HSetNX(key, field, value string) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
 
-		val, err = client.HSetNX(key, field, value).Result()
+		ok, err = client.HSetNX(key, field, value).Result()
 		return err
 	}, acceptable)
 
@@ -510,22 +510,22 @@ func (r *Redis) MGet(keys ...string) (values []string, err error) {
 // Persist 移除给定key的生存时间
 //
 // 将这个 key 从『易失的』(带生存时间 key )转换成『持久的』(一个不带生存时间、永不过期的 key )。
-func (r *Redis) Persist(key string) (result bool, err error) {
+func (r *Redis) Persist(key string) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
 
-		result, err = client.Persist(key).Result()
+		ok, err = client.Persist(key).Result()
 		return err
 	}, acceptable)
 
 	return
 }
 
-// PFAdd 将除了第一个参数以外的参数存储到以第一个参数为变量名的HyperLogLog结构中.
-func (r *Redis) PFAdd(key string, values ...interface{}) (val bool, err error) {
+// PFAdd 将 values 存到以名为 key 的 HyperLogLog结构中.
+func (r *Redis) PFAdd(key string, values ...interface{}) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -535,7 +535,7 @@ func (r *Redis) PFAdd(key string, values ...interface{}) (val bool, err error) {
 		if v, err := client.PFAdd(key, values...).Result(); err != nil {
 			return err
 		} else {
-			val = v == 1
+			ok = v == 1
 			return nil
 		}
 	}, acceptable)
@@ -574,7 +574,7 @@ func (r *Redis) PFMerge(dest string, keys ...string) error {
 }
 
 // Ping 测试连接是否可用
-func (r *Redis) Ping() (result bool) {
+func (r *Redis) Ping() (ok bool) {
 	_ = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -582,10 +582,10 @@ func (r *Redis) Ping() (result bool) {
 		}
 
 		if v, err := client.Ping().Result(); err != nil {
-			result = false
+			ok = false
 			return nil
 		} else {
-			result = v == "PONG"
+			ok = v == "PONG"
 			return nil
 		}
 	}, acceptable)
@@ -629,7 +629,7 @@ func (r *Redis) RPush(key string, values ...interface{}) (val int, err error) {
 }
 
 // SAdd 添加一个或多个指定的member元素到集合的 key 中。
-func (r *Redis) SAdd(key string, values ...interface{}) (val int, err error) {
+func (r *Redis) SAdd(key string, values ...interface{}) (length int, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -639,7 +639,7 @@ func (r *Redis) SAdd(key string, values ...interface{}) (val int, err error) {
 		if v, err := client.SAdd(key, values...).Result(); err != nil {
 			return err
 		} else {
-			val = int(v)
+			length = int(v)
 			return nil
 		}
 	}, acceptable)
@@ -688,14 +688,14 @@ func (r *Redis) SetBit(key string, offset int64, value int) error {
 // match 正则匹配模式
 //
 // count 为此次迭代期望返回条的数
-func (r *Redis) SScan(key string, cursor uint64, match string, count int64) (keys []string, cur uint64, err error) {
+func (r *Redis) SScan(key string, cursor uint64, match string, count int64) (keys []string, nextCur uint64, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
 
-		keys, cur, err = client.SScan(key, cursor, match, count).Result()
+		keys, nextCur, err = client.SScan(key, cursor, match, count).Result()
 		return err
 	}, acceptable)
 
@@ -748,14 +748,14 @@ func (r *Redis) SetEx(key, value string, seconds int) error {
 // 如果key不存在，这种情况下等同SET命令。
 //
 // 当key存在时，什么也不做。SETNX是”SET if Not eXists”的简写。
-func (r *Redis) SetNX(key, value string) (val bool, err error) {
+func (r *Redis) SetNX(key, value string) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
 
-		val, err = client.SetNX(key, value, 0).Result()
+		ok, err = client.SetNX(key, value, 0).Result()
 		return err
 	}, acceptable)
 
@@ -763,14 +763,14 @@ func (r *Redis) SetNX(key, value string) (val bool, err error) {
 }
 
 // SetNXEx 设置一个不存在的key值为value，并设置过期时间。如果key存在则什么也不做。
-func (r *Redis) SetNXEx(key, value string, seconds int) (val bool, err error) {
+func (r *Redis) SetNXEx(key, value string, seconds int) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
 
-		val, err = client.SetNX(key, value, time.Duration(seconds)*time.Second).Result()
+		ok, err = client.SetNX(key, value, time.Duration(seconds)*time.Second).Result()
 		return err
 	}, acceptable)
 
@@ -778,13 +778,13 @@ func (r *Redis) SetNXEx(key, value string, seconds int) (val bool, err error) {
 }
 
 // SIsMemeber 返回成员 member 是否是存储的集合 key 的成员.
-func (r *Redis) SIsMember(key string, member interface{}) (val bool, err error) {
+func (r *Redis) SIsMember(key string, member interface{}) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
-		val, err = client.SIsMember(key, member).Result()
+		ok, err = client.SIsMember(key, member).Result()
 		return err
 	}, acceptable)
 
@@ -792,7 +792,7 @@ func (r *Redis) SIsMember(key string, member interface{}) (val bool, err error) 
 }
 
 // SRem 在key集合中移除指定的元素.
-func (r *Redis) SRem(key string, members ...interface{}) (val int, err error) {
+func (r *Redis) SRem(key string, members ...interface{}) (length int, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -802,7 +802,7 @@ func (r *Redis) SRem(key string, members ...interface{}) (val int, err error) {
 		if v, err := client.SRem(key, members...).Result(); err != nil {
 			return err
 		} else {
-			val = int(v)
+			length = int(v)
 			return nil
 		}
 	}, acceptable)
@@ -841,14 +841,14 @@ func (r *Redis) SPop(key string) (val string, err error) {
 }
 
 // SRandMemberN 它从一个集合中返回N个随机元素，但不删除元素。
-func (r *Redis) SRandMemberN(key string, count int) (val []string, err error) {
+func (r *Redis) SRandMemberN(key string, count int) (members []string, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
 			return err
 		}
 
-		val, err = client.SRandMemberN(key, int64(count)).Result()
+		members, err = client.SRandMemberN(key, int64(count)).Result()
 		return err
 	}, acceptable)
 
@@ -951,7 +951,7 @@ func (r *Redis) TTL(key string) (val int, err error) {
 // store 成员排序分值
 //
 // member 成员名称
-func (r *Redis) ZAdd(key string, score int64, member string) (val bool, err error) {
+func (r *Redis) ZAdd(key string, score int64, member string) (ok bool, err error) {
 	err = r.brk.DoWithAcceptable(func() error {
 		client, err := getClient(r)
 		if err != nil {
@@ -964,7 +964,7 @@ func (r *Redis) ZAdd(key string, score int64, member string) (val bool, err erro
 		}).Result(); err != nil {
 			return err
 		} else {
-			val = v == 1
+			ok = v == 1
 			return nil
 		}
 	}, acceptable)

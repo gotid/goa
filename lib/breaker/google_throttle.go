@@ -96,7 +96,7 @@ func (t *googleThrottle) accept() error {
 	//droppedRequests := float64(requests) - weightedAccepts
 	dropRatio := math.Max(0, droppedRequests/float64(requests+1))
 
-	logx.Statf("dropRation = max(0, ((%d-%d)-%.0f*%d)/(%d+1)) --- %f", requests, protection, t.k, accepts, requests, dropRatio)
+	//logx.Infof("dropRation = max(0, ((%d-%d)-%.0f*%d)/(%d+1)) --- %f", requests, protection, t.k, accepts, requests, dropRatio)
 
 	// 无需拒绝
 	if dropRatio <= 0 {
