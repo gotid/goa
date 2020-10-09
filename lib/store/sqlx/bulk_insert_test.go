@@ -4,8 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"goa/lib/logx"
-	"runtime"
+	"math/rand"
 	"strconv"
 	"testing"
 )
@@ -50,22 +49,22 @@ func TestBulkInserter_Insert(t *testing.T) {
 
 func TestBulkInserter_Suffix(t *testing.T) {
 	//logx.Disable()
-	logx.SetLevel(logx.ErrorLevel)
+	//logx.SetLevel(logx.ErrorLevel)
 	//runSqlTest(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
 	runSqlTest(t, func(conn Conn) {
 		//var conn mockedConn
-		inserter, err := NewBulkInserter(conn, `INSERT INTO classroom_dau(classroom, user, count) VALUES`+
-			`(?, ?, ?) ON DUPLICATE KEY UPDATE is_overtime=VALUES(is_overtime)`)
+		inserter, err := NewBulkInserter(conn, `INSERT INTO nest_content_online.content_feed(user_id, content) VALUES`+
+			`(?, ?) ON DUPLICATE KEY UPDATE updated_at=VALUES(updated_at)`)
 		assert.Nil(t, err)
 
-		inserter.SetRequestHandler(func(result sql.Result, err error) {
-			affected, err := result.RowsAffected()
-			insertId, err := result.LastInsertId()
-			logx.Infof("协程数量：%d, 影响行数：%d, 返回编号：%d", runtime.NumGoroutine(), affected, insertId)
-		})
+		//inserter.SetRequestHandler(func(result sql.Result, err error) {
+		//	affected, err := result.RowsAffected()
+		//	insertId, err := result.LastInsertId()
+		//	logx.Infof("协程数量：%d, 影响行数：%d, 返回编号：%d", runtime.NumGoroutine(), affected, insertId)
+		//})
 
-		for i := 2934000; i < 5000000; i++ {
-			assert.Nil(t, inserter.Insert("class_"+strconv.Itoa(i), "user_"+strconv.Itoa(i), i))
+		for i := 0; i < 10; i++ {
+			assert.Nil(t, inserter.Insert(rand.Intn(218-6)+6, "动态"+strconv.Itoa(i)))
 		}
 		inserter.Flush()
 		//assert.Equal(t, `INSERT INTO classroom_dau(classroom, user, count) VALUES `+

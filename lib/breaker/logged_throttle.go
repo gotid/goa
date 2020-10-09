@@ -2,7 +2,7 @@ package breaker
 
 import (
 	"fmt"
-	"goa/lib/container"
+	"goa/lib/collection"
 	"goa/lib/proc"
 	"goa/lib/stat"
 )
@@ -21,13 +21,13 @@ type (
 
 	promiseWithReason struct {
 		promise internalPromise
-		errWin  *container.ErrorWindow
+		errWin  *collection.ErrorWindow
 	}
 
 	loggedThrottle struct {
 		name string
 		internalThrottle
-		errWin *container.ErrorWindow
+		errWin *collection.ErrorWindow
 	}
 )
 
@@ -35,7 +35,7 @@ func newLoggedThrottle(name string, t internalThrottle) loggedThrottle {
 	return loggedThrottle{
 		name:             name,
 		internalThrottle: t,
-		errWin:           container.NewErrorWindow(),
+		errWin:           collection.NewErrorWindow(),
 	}
 }
 

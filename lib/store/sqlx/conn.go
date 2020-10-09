@@ -101,8 +101,8 @@ func (c *conn) Query(dest interface{}, query string, args ...interface{}) error 
 
 func (c *conn) Exec(query string, args ...interface{}) (result sql.Result, err error) {
 	err = c.brk.DoWithAcceptable(func() error {
-		fmt.Println("获取连接并做数据库执行")
-		fmt.Println()
+		//fmt.Println("获取连接并做数据库执行")
+		//fmt.Println()
 
 		// 获取数据库连接
 		db, err := getConn(c.driverName, c.dataSourceName)

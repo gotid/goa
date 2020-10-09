@@ -11,23 +11,23 @@ import (
 
 func TestCachedCalls_Get(t *testing.T) {
 	calls := NewSharedCalls()
-	result, hit, err := calls.Get("ping", func() (result interface{}, err error) {
+	result, hit, err := calls.Do("ping", func() (result interface{}, err error) {
 		return "pong", nil
 	})
 	got := fmt.Sprintf("%v (%T) %t", result, result, hit)
 	expect := "pong (string) false"
 	if got != expect {
-		t.Errorf("Get = %v; expect %v", got, expect)
+		t.Errorf("Do = %v; expect %v", got, expect)
 	}
 	if err != nil {
-		t.Errorf("Get error = %v", err)
+		t.Errorf("Do error = %v", err)
 	}
 }
 
 func TestCachedCalls_GetErr(t *testing.T) {
 	calls := NewSharedCalls()
 	someErr := errors.New("一些错误")
-	result, _, err := calls.Get("ping", func() (result interface{}, err error) {
+	result, _, err := calls.Do("ping", func() (result interface{}, err error) {
 		return nil, someErr
 	})
 	if err != someErr {
@@ -52,7 +52,7 @@ func TestExclusiveCallDoDupSuppress(t *testing.T) {
 	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go func() {
-			result, _, err := calls.Get("ping", fn)
+			result, _, err := calls.Do("ping", fn)
 			if err != nil {
 				t.Errorf("Do error: %result", err)
 			}

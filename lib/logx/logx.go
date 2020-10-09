@@ -109,6 +109,7 @@ func MustSetup(c LogConf) {
 	Must(Setup(c))
 }
 
+// Must 必须无错，否则退出程序
 func Must(err error) {
 	if err != nil {
 		msg := formatWithCaller(err.Error(), 3)
@@ -214,6 +215,10 @@ func ErrorCallerf(callDepth int, format string, args ...interface{}) {
 
 func ErrorStack(v ...interface{}) {
 	syncStack(fmt.Sprint(v...))
+}
+
+func Fatal(v ...interface{}) {
+	syncFatal(fmt.Sprint(v...))
 }
 
 func Fatalf(format string, args ...interface{}) {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"goa/lib/container"
+	"goa/lib/collection"
 	"goa/lib/mathx"
 	"math"
 	"math/rand"
@@ -95,7 +95,7 @@ func TestGoogleBreakerAcceptable(t *testing.T) {
 	win := b.stat.Win()
 	fmt.Println(win.Buckets())
 	var total int64
-	b.stat.Reduce(func(b *container.Bucket) {
+	b.stat.Reduce(func(b *collection.Bucket) {
 		total += int64(b.Accepts)
 	})
 	fmt.Println("接受次数", total)
@@ -113,7 +113,7 @@ func TestGoogleBreakerNotAcceptable(t *testing.T) {
 	win := b.stat.Win()
 	fmt.Println(win.Buckets())
 	var total int64
-	b.stat.Reduce(func(b *container.Bucket) {
+	b.stat.Reduce(func(b *collection.Bucket) {
 		total += int64(b.Accepts)
 	})
 	fmt.Println("接受次数", total)
@@ -233,7 +233,7 @@ func getGoogleBreaker() *googleThrottle {
 	return &googleThrottle{
 		k:     5,
 		state: StateClosed,
-		stat:  container.NewRollingWindow(testBuckets, testInterval),
+		stat:  collection.NewRollingWindow(testBuckets, testInterval),
 		prob:  mathx.NewProb(),
 	}
 }

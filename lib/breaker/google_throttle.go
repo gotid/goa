@@ -1,7 +1,7 @@
 package breaker
 
 import (
-	"goa/lib/container"
+	"goa/lib/collection"
 	"goa/lib/logx"
 	"goa/lib/mathx"
 	"math"
@@ -21,9 +21,9 @@ type (
 	// googleThrottle 是谷歌处理 overload 过载问题的节流阀实现。
 	// see Client-Side Throttling section in https://landing.google.com/sre/sre-book/chapters/handling-overload/
 	googleThrottle struct {
-		k     float64                  // 请求接受比例
-		state int32                    // 断路器跳闸状态
-		stat  *container.RollingWindow // 统计窗口计数器（采用滚窗算法）
+		k     float64                   // 请求接受比例
+		state int32                     // 断路器跳闸状态
+		stat  *collection.RollingWindow // 统计窗口计数器（采用滚窗算法）
 		prob  *mathx.Prob
 	}
 
@@ -34,7 +34,7 @@ type (
 
 func newGoogleBreaker() *googleThrottle {
 	bucketDuration := time.Duration(int64(window) / int64(buckets)) // 单桶时长，默认250毫秒
-	statWindow := container.NewRollingWindow(buckets, bucketDuration)
+	statWindow := collection.NewRollingWindow(buckets, bucketDuration)
 	return &googleThrottle{
 		k:     K,
 		state: StateClosed,
@@ -122,7 +122,7 @@ func (t *googleThrottle) accept() error {
 
 // 历史总数（请求多少次，同意多少次）
 func (t *googleThrottle) history() (requests int64, accepts int64) {
-	t.stat.Reduce(func(b *container.Bucket) {
+	t.stat.Reduce(func(b *collection.Bucket) {
 		requests += int64(b.Requests)
 		accepts += int64(b.Accepts)
 	})

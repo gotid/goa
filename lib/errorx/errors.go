@@ -22,8 +22,8 @@ func (es errArray) Error() string {
 	return buf.String()
 }
 
-// Append 追加一条错误
-func (es *Errors) Append(err error) {
+// Add 追加一条错误
+func (es *Errors) Add(err error) {
 	if err != nil {
 		es.errs = append(es.errs, err)
 	}

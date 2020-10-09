@@ -47,7 +47,6 @@ func doExec(db session, query string, args ...interface{}) (sql.Result, error) {
 	result, err := db.Exec(query, args...)
 	duration := time.Since(startTime)
 
-	// TODO 日志开关控制 atomic
 	if duration > slowThreshold {
 		logx.WithDuration(duration).Slowf("[SQL] 慢执行(%v) - %s", duration, stmt)
 	} else {

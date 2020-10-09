@@ -21,6 +21,10 @@ type (
 	}
 )
 
+func (c Conf) NewRedis() *Redis {
+	return NewRedis(c.Host, c.Mode, c.Password)
+}
+
 func (c Conf) Validate() error {
 	if len(c.Host) == 0 {
 		return ErrEmptyHost

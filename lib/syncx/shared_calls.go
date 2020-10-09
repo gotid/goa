@@ -6,7 +6,7 @@ type (
 	// SharedCalls 共享调用接口让相同 key 的并发调用共享同一个调用结果。
 	// 如，A 先调用 X，B 后调用了 X，则先执行 A，然后 B 共享该结果。
 	SharedCalls interface {
-		Get(key string, callFn func() (result interface{}, err error)) (
+		Do(key string, callFn func() (result interface{}, err error)) (
 			result interface{},
 			hit bool,
 			err error,
@@ -35,7 +35,7 @@ func NewSharedCalls() SharedCalls {
 }
 
 // Get 获取指定 key 的调用、是否命中及错误信息，如未命中则重新调用并共享。
-func (g *sharedCalls) Get(key string, callFn func() (interface{}, error)) (result interface{}, hit bool, err error) {
+func (g *sharedCalls) Do(key string, callFn func() (interface{}, error)) (result interface{}, hit bool, err error) {
 	c, hit := g.get(key)
 
 	// 命中共享调用，则直接返回结果及错误

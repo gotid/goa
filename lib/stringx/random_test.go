@@ -3,6 +3,7 @@ package stringx
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -17,6 +18,10 @@ func TestRand(t *testing.T) {
 	const size = 10
 	assert.True(t, len(Randn(size)) == size)
 	fmt.Println(Randn(size))
+}
+
+func TestRandId(t *testing.T) {
+	fmt.Println(rand.Intn(218-6) + 6)
 }
 
 func BenchmarkRand(b *testing.B) {
