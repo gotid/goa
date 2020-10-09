@@ -19,13 +19,13 @@ type (
 		TakeEx(dest interface{}, key string, queryFn func(newVal interface{}, expires time.Duration) error) error
 	}
 
-	cacheCluster struct {
+	cluster struct {
 		dispatcher  *hash.ConsistentHash
 		errNotFound error
 	}
 )
 
-func NewCache(confs ClusterConf, barrier syncx.SharedCalls, stat *Stat, errNotFound error, opts ...Option) Cache {
+func NewCacheCluster(confs ClusterConf, barrier syncx.SharedCalls, stat *Stat, errNotFound error, opts ...Option) Cache {
 	if len(confs) == 0 || TotalWeights(confs) <= 0 {
 		logx.Fatal("未配置缓存节点")
 	}
@@ -41,37 +41,37 @@ func NewCache(confs ClusterConf, barrier syncx.SharedCalls, stat *Stat, errNotFo
 		dispatcher.AddWithWeight(node, conf.Weight)
 	}
 
-	return cacheCluster{
+	return cluster{
 		dispatcher:  dispatcher,
 		errNotFound: errNotFound,
 	}
 }
 
-func (cc cacheCluster) Del(keys ...string) error {
+func (c cluster) Del(keys ...string) error {
 	switch len(keys) {
 	case 0:
 		return nil
 	case 1:
 		key := keys[0]
-		c, ok := cc.dispatcher.Get(key)
+		node, ok := c.dispatcher.Get(key)
 		if !ok {
-			return cc.errNotFound
+			return c.errNotFound
 		}
-		return c.(Cache).Del(key)
+		return node.(Cache).Del(key)
 	default:
 		var es errorx.Errors
 		nodes := make(map[interface{}][]string)
 		for _, key := range keys {
-			c, ok := cc.dispatcher.Get(key)
+			node, ok := c.dispatcher.Get(key)
 			if !ok {
 				es.Add(fmt.Errorf("缓存 key %q 不存在", key))
 				continue
 			}
 
-			nodes[c] = append(nodes[c], key)
+			nodes[node] = append(nodes[node], key)
 		}
-		for c, keys := range nodes {
-			if err := c.(Cache).Del(keys...); err != nil {
+		for node, keys := range nodes {
+			if err := node.(Cache).Del(keys...); err != nil {
 				es.Add(err)
 			}
 		}
@@ -80,47 +80,47 @@ func (cc cacheCluster) Del(keys ...string) error {
 	}
 }
 
-func (cc cacheCluster) Get(key string, dest interface{}) error {
-	c, ok := cc.dispatcher.Get(key)
+func (c cluster) Get(key string, dest interface{}) error {
+	node, ok := c.dispatcher.Get(key)
 	if !ok {
-		return cc.errNotFound
+		return c.errNotFound
 	}
 
-	return c.(Cache).Get(key, dest)
+	return node.(Cache).Get(key, dest)
 }
 
-func (cc cacheCluster) Set(key string, value interface{}) error {
-	c, ok := cc.dispatcher.Get(key)
+func (c cluster) Set(key string, value interface{}) error {
+	node, ok := c.dispatcher.Get(key)
 	if !ok {
-		return cc.errNotFound
+		return c.errNotFound
 	}
 
-	return c.(Cache).Set(key, value)
+	return node.(Cache).Set(key, value)
 }
 
-func (cc cacheCluster) SetEx(key string, value interface{}, expires time.Duration) error {
-	c, ok := cc.dispatcher.Get(key)
+func (c cluster) SetEx(key string, value interface{}, expires time.Duration) error {
+	node, ok := c.dispatcher.Get(key)
 	if !ok {
-		return cc.errNotFound
+		return c.errNotFound
 	}
 
-	return c.(Cache).SetEx(key, value, expires)
+	return node.(Cache).SetEx(key, value, expires)
 }
 
-func (cc cacheCluster) Take(dest interface{}, key string, queryFn func(v interface{}) error) error {
-	c, ok := cc.dispatcher.Get(key)
+func (c cluster) Take(dest interface{}, key string, queryFn func(v interface{}) error) error {
+	node, ok := c.dispatcher.Get(key)
 	if !ok {
-		return cc.errNotFound
+		return c.errNotFound
 	}
 
-	return c.(Cache).Take(dest, key, queryFn)
+	return node.(Cache).Take(dest, key, queryFn)
 }
 
-func (cc cacheCluster) TakeEx(dest interface{}, key string, queryFn func(newVal interface{}, expires time.Duration) error) error {
-	c, ok := cc.dispatcher.Get(key)
+func (c cluster) TakeEx(dest interface{}, key string, queryFn func(newVal interface{}, expires time.Duration) error) error {
+	node, ok := c.dispatcher.Get(key)
 	if !ok {
-		return cc.errNotFound
+		return c.errNotFound
 	}
 
-	return c.(Cache).TakeEx(dest, key, queryFn)
+	return node.(Cache).TakeEx(dest, key, queryFn)
 }
