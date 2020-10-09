@@ -132,6 +132,7 @@ func (n node) doGet(key string, dest interface{}) error {
 }
 
 func (n node) doTake(dest interface{}, key string, queryFn func(newVal interface{}) error, cacheValFn func(newVal interface{}) error) error {
+	// 防缓存击穿 barrier -> SharedCalls
 	result, hit, err := n.barrier.Do(key, func() (interface{}, error) {
 		if err := n.doGet(key, dest); err != nil {
 			if err == errPlaceholder {
@@ -193,12 +194,12 @@ func (n node) processCache(key string, result string, dest interface{}) error {
 	return n.errNotFound
 }
 
-// 基于指定过期时间生成一个新的临近值，以防缓存同时过期，造成缓存雪崩
+// 防缓存雪崩：基于指定时间生成一个随机临近值，以防N多缓存同时过期，瞬间冲击数据库压力
 func (n node) aroundDuration(expires time.Duration) time.Duration {
 	return n.unstableExpires.AroundDuration(expires)
 }
 
-// 没找到的记录照样缓存并设置短暂过期时间，以防缓存穿透，减缓数据库压力
+// 防缓存穿透：没找到的记录，照样缓存并设置短暂过期时间，减缓数据库压力
 func (n node) setWithNotFound(key string) error {
 	return n.rds.SetEx(key, notFoundPlaceholder, int(n.aroundDuration(n.notFoundExpires).Seconds()))
 }
