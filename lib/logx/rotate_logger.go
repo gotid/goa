@@ -2,9 +2,9 @@ package logx
 
 import (
 	"errors"
-	"goa/lib/fs"
-	"goa/lib/lang"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/fs"
+	"github.com/z-sdk/goa/lib/lang"
+	"github.com/z-sdk/goa/lib/timex"
 	"log"
 	"os"
 	"path"

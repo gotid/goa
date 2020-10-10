@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"goa/lib/logx"
+	"github.com/z-sdk/goa/lib/logx"
 	"sync/atomic"
 	"time"
 )

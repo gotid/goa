@@ -2,8 +2,8 @@ package collection
 
 import (
 	"fmt"
-	"goa/lib/mathx"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/mathx"
+	"github.com/z-sdk/goa/lib/timex"
 	"strings"
 	"sync"
 )

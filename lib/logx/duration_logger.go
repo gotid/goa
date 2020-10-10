@@ -2,7 +2,7 @@ package logx
 
 import (
 	"fmt"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/timex"
 	"io"
 	"time"
 )

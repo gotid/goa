@@ -2,9 +2,9 @@ package breaker
 
 import (
 	"fmt"
-	"goa/lib/collection"
-	"goa/lib/proc"
-	"goa/lib/stat"
+	"github.com/z-sdk/goa/lib/collection"
+	"github.com/z-sdk/goa/lib/proc"
+	"github.com/z-sdk/goa/lib/stat"
 )
 
 type (

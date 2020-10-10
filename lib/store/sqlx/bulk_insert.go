@@ -3,9 +3,9 @@ package sqlx
 import (
 	"database/sql"
 	"fmt"
-	"goa/lib/dispatcher"
-	"goa/lib/logx"
-	"goa/lib/stringx"
+	"github.com/z-sdk/goa/lib/dispatcher"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/stringx"
 	"strings"
 	"time"
 )

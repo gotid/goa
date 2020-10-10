@@ -2,9 +2,9 @@ package sqlx
 
 import (
 	"database/sql"
-	"goa/lib/store/cache"
-	"goa/lib/store/redis"
-	"goa/lib/syncx"
+	"github.com/z-sdk/goa/lib/store/cache"
+	"github.com/z-sdk/goa/lib/store/redis"
+	"github.com/z-sdk/goa/lib/syncx"
 	"time"
 )
 

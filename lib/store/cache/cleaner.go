@@ -2,12 +2,12 @@ package cache
 
 import (
 	"fmt"
-	"goa/lib/collection"
-	"goa/lib/logx"
-	"goa/lib/proc"
-	"goa/lib/stat"
-	"goa/lib/stringx"
-	"goa/lib/threading"
+	"github.com/z-sdk/goa/lib/collection"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/proc"
+	"github.com/z-sdk/goa/lib/stat"
+	"github.com/z-sdk/goa/lib/stringx"
+	"github.com/z-sdk/goa/lib/threading"
 	"time"
 )
 

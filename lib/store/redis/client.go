@@ -3,10 +3,10 @@ package redis
 import (
 	"fmt"
 	"github.com/go-redis/redis"
-	"goa/lib/logx"
-	"goa/lib/mapping"
-	"goa/lib/syncx"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/mapping"
+	"github.com/z-sdk/goa/lib/syncx"
+	"github.com/z-sdk/goa/lib/timex"
 	"io"
 	"strings"
 )

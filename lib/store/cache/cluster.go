@@ -2,10 +2,10 @@ package cache
 
 import (
 	"fmt"
-	"goa/lib/errorx"
-	"goa/lib/hash"
-	"goa/lib/logx"
-	"goa/lib/syncx"
+	"github.com/z-sdk/goa/lib/errorx"
+	"github.com/z-sdk/goa/lib/hash"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/syncx"
 	"time"
 )
 

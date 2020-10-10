@@ -1,11 +1,11 @@
 package dispatcher
 
 import (
-	"goa/lib/lang"
-	"goa/lib/proc"
-	"goa/lib/syncx"
-	"goa/lib/threading"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/lang"
+	"github.com/z-sdk/goa/lib/proc"
+	"github.com/z-sdk/goa/lib/syncx"
+	"github.com/z-sdk/goa/lib/threading"
+	"github.com/z-sdk/goa/lib/timex"
 	"reflect"
 	"sync"
 	"time"

@@ -1,6 +1,6 @@
 package cache
 
-import "goa/lib/store/redis"
+import "github.com/z-sdk/goa/lib/store/redis"
 
 type (
 	// 节点配置

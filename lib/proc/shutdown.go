@@ -1,7 +1,7 @@
 package proc
 
 import (
-	"goa/lib/logx"
+	"github.com/z-sdk/goa/lib/logx"
 	"os"
 	"os/signal"
 	"syscall"

@@ -2,7 +2,7 @@ package sqlx
 
 import (
 	"database/sql"
-	"goa/lib/logx"
+	"github.com/z-sdk/goa/lib/logx"
 	"time"
 )
 

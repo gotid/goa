@@ -1,8 +1,8 @@
 package threading
 
 import (
-	"goa/lib/lang"
-	"goa/lib/rescue"
+	"github.com/z-sdk/goa/lib/lang"
+	"github.com/z-sdk/goa/lib/rescue"
 )
 
 type TaskRunner struct {

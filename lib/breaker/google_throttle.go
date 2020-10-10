@@ -1,9 +1,9 @@
 package breaker
 
 import (
-	"goa/lib/collection"
-	"goa/lib/logx"
-	"goa/lib/mathx"
+	"github.com/z-sdk/goa/lib/collection"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/mathx"
 	"math"
 	"sync/atomic"
 	"time"

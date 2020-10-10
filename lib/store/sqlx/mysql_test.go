@@ -3,7 +3,7 @@ package sqlx
 import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
-	"goa/lib/breaker"
+	"github.com/z-sdk/goa/lib/breaker"
 	"testing"
 )
 

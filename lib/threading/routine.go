@@ -2,7 +2,7 @@ package threading
 
 import (
 	"bytes"
-	"goa/lib/rescue"
+	"github.com/z-sdk/goa/lib/rescue"
 	"runtime"
 	"strconv"
 )

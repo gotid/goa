@@ -2,7 +2,7 @@ package breaker
 
 import (
 	"errors"
-	"goa/lib/stringx"
+	"github.com/z-sdk/goa/lib/stringx"
 )
 
 const (

@@ -3,8 +3,8 @@ package sqlx
 import (
 	"database/sql"
 	"fmt"
-	"goa/lib/logx"
-	"goa/lib/mapping"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/mapping"
 	"reflect"
 	"strings"
 )

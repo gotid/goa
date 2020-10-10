@@ -2,7 +2,7 @@ package collection
 
 import (
 	"github.com/stretchr/testify/assert"
-	"goa/lib/stringx"
+	"github.com/z-sdk/goa/lib/stringx"
 	"testing"
 )
 

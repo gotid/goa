@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis"
-	"goa/lib/mapping"
+	"github.com/z-sdk/goa/lib/mapping"
 	"strconv"
 	"time"
 )

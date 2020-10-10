@@ -1,4 +1,4 @@
-module goa
+module github.com/z-sdk/goa
 
 go 1.15
 

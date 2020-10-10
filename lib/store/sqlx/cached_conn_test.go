@@ -3,10 +3,10 @@ package sqlx
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"goa/lib/logx"
-	"goa/lib/stat"
-	"goa/lib/store/cache"
-	"goa/lib/store/redis"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/stat"
+	"github.com/z-sdk/goa/lib/store/cache"
+	"github.com/z-sdk/goa/lib/store/redis"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -56,8 +56,9 @@ func TestCachedConn_FindByIndex(t *testing.T) {
 	r := redis.NewRedis("192.168.0.166:6800", redis.StandaloneMode)
 	conn := NewMySQL("root:asdfasdf@tcp(192.168.0.166:3306)/nest_user?parseTime=true")
 	//c := NewCachedConn(conn, r, cache.WithExpires(10*time.Second))
+	//c := NewCachedConn(conn, r, cache.WithExpires(24*time.Hour), cache.WithNotFoundExpires(10*time.Second))
 	c := NewCachedConn(conn, r) // 默认缓存7天
-
+	//
 	var profile Profile
 	nickname := "测试小号9"
 	nicknameKey := fmt.Sprintf("%s%v", cacheUserNicknamePrefix, nickname)
@@ -75,6 +76,7 @@ func TestCachedConn_FindByIndex(t *testing.T) {
 		}
 		return profile.ID, nil
 	}, func(conn Conn, dest, id interface{}) error {
+		// id 由上一个索引查询函数返回
 		fmt.Println("主键查询", id)
 		// 通过主键查行记录
 		query := `select id, kind, nickname from nest_user.profile where id=?`

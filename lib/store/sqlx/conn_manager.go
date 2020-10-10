@@ -2,7 +2,7 @@ package sqlx
 
 import (
 	"database/sql"
-	"goa/lib/syncx"
+	"github.com/z-sdk/goa/lib/syncx"
 	"io"
 	"sync"
 	"time"

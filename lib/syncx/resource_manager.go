@@ -1,7 +1,7 @@
 package syncx
 
 import (
-	"goa/lib/errorx"
+	"github.com/z-sdk/goa/lib/errorx"
 	"io"
 	"sync"
 )

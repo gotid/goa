@@ -2,7 +2,7 @@ package redis
 
 import (
 	"github.com/go-redis/redis"
-	"goa/lib/breaker"
+	"github.com/z-sdk/goa/lib/breaker"
 	"time"
 )
 

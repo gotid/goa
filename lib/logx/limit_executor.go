@@ -1,8 +1,8 @@
 package logx
 
 import (
-	"goa/lib/syncx"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/syncx"
+	"github.com/z-sdk/goa/lib/timex"
 	"sync/atomic"
 	"time"
 )

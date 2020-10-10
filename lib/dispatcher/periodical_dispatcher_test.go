@@ -2,7 +2,7 @@ package dispatcher
 
 import (
 	"github.com/stretchr/testify/assert"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/timex"
 	"runtime"
 	"sync"
 	"sync/atomic"

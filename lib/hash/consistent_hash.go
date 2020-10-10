@@ -2,8 +2,8 @@ package hash
 
 import (
 	"fmt"
-	"goa/lib/lang"
-	"goa/lib/mapping"
+	"github.com/z-sdk/goa/lib/lang"
+	"github.com/z-sdk/goa/lib/mapping"
 	"sort"
 	"strconv"
 	"sync"

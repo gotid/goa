@@ -2,7 +2,7 @@ package collection
 
 import (
 	"fmt"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/timex"
 	"sync"
 	"time"
 )

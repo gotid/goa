@@ -3,7 +3,7 @@ package hash
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"goa/lib/mathx"
+	"github.com/z-sdk/goa/lib/mathx"
 	"strconv"
 	"testing"
 )

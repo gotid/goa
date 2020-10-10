@@ -1,7 +1,7 @@
 package sqlx
 
 import (
-	"goa/lib/logx"
+	"github.com/z-sdk/goa/lib/logx"
 	"testing"
 )
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"goa/lib/store/sqlx"
+	"github.com/z-sdk/goa/lib/store/sqlx"
 	"time"
 )
 

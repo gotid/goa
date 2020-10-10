@@ -3,10 +3,10 @@ package collection
 import (
 	"container/list"
 	"fmt"
-	"goa/lib/lang"
-	"goa/lib/logx"
-	"goa/lib/threading"
-	"goa/lib/timex"
+	"github.com/z-sdk/goa/lib/lang"
+	"github.com/z-sdk/goa/lib/logx"
+	"github.com/z-sdk/goa/lib/threading"
+	"github.com/z-sdk/goa/lib/timex"
 	"time"
 )
 

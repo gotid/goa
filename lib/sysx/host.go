@@ -1,7 +1,7 @@
 package sysx
 
 import (
-	"goa/lib/stringx"
+	"github.com/z-sdk/goa/lib/stringx"
 	"os"
 )
 

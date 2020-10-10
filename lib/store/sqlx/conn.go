@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"goa/lib/breaker"
+	"github.com/z-sdk/goa/lib/breaker"
 	"time"
 )
 

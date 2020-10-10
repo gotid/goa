@@ -2,7 +2,7 @@ package timex
 
 import (
 	"errors"
-	"goa/lib/lang"
+	"github.com/z-sdk/goa/lib/lang"
 	"time"
 )
 
