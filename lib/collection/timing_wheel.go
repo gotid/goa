@@ -13,13 +13,13 @@ const drainWorkers = 8
 
 type (
 	TimingWheel struct {
-		interval      time.Duration
+		interval      time.Duration // 时间划分刻度，一个最小的时间格子，是定时器的转动单位
 		ticker        timex.Ticker
 		slots         []*list.List
 		timers        *SafeMap
-		tickedPos     int
-		numSlots      int
-		execute       Execute
+		numSlots      int     // 时间轮的插槽数量（有几个圆）
+		tickedPos     int     // 定时器位置
+		execute       Execute // 时间点执行函数
 		setChannel    chan timingEntry
 		moveChannel   chan baseEntry
 		removeChannel chan interface{}
@@ -61,20 +61,21 @@ func NewTimingWheel(interval time.Duration, numSlots int, execute Execute) (*Tim
 	return newTimingWheelWithClock(interval, numSlots, execute, timex.NewTicker(interval))
 }
 
+// 真正做初始化
 func newTimingWheelWithClock(interval time.Duration, numSlots int, execute Execute, ticker timex.Ticker) (*TimingWheel, error) {
 	w := &TimingWheel{
-		interval:      interval,
-		ticker:        ticker,
-		slots:         make([]*list.List, numSlots),
-		timers:        NewSafeMap(),
-		tickedPos:     numSlots - 1, // 位于上一次虚拟circle中
-		numSlots:      numSlots,
-		execute:       execute,
-		setChannel:    make(chan timingEntry),
-		moveChannel:   make(chan baseEntry),
-		removeChannel: make(chan interface{}),
-		drainChannel:  make(chan func(key, value interface{})),
-		stopChannel:   make(chan lang.PlaceholderType),
+		interval:      interval,                                // 单个时间间隔
+		ticker:        ticker,                                  // 定时器，做时间推动，以 interval 为单位推进
+		slots:         make([]*list.List, numSlots),            // 时间槽，双向链表实现
+		timers:        NewSafeMap(),                            // 存储 task{key, value} 的 map，提供 execute 执行函数所需参数
+		numSlots:      numSlots,                                // 时间槽个数
+		tickedPos:     numSlots - 1,                            // 位于上一次虚拟circle中
+		execute:       execute,                                 // 时间点任务的真正执行函数
+		setChannel:    make(chan timingEntry),                  // 设置任务的通道
+		moveChannel:   make(chan baseEntry),                    // 移动任务的通道
+		removeChannel: make(chan interface{}),                  // 移除任务的通道
+		drainChannel:  make(chan func(key, value interface{})), // 执行任务通道
+		stopChannel:   make(chan lang.PlaceholderType),         // 停止任务通道
 	}
 
 	w.initSlots()
@@ -133,19 +134,25 @@ func (w *TimingWheel) initSlots() {
 	}
 }
 
+// 运行定时器，推动时间轮运转
 func (w *TimingWheel) run() {
 	fmt.Println("开始运行时间轮")
 
 	for {
 		select {
+		// 定时器推动时间
 		case <-w.ticker.Chan():
 			w.onTick()
+		//	收到新任务
 		case task := <-w.setChannel:
 			w.setTask(&task)
+		//	移除任务
 		case key := <-w.removeChannel:
 			w.removeTask(key)
+		//	清洗任务
 		case fn := <-w.drainChannel:
 			w.drainAll(fn)
+		// 停止定时器
 		case <-w.stopChannel:
 			w.ticker.Stop()
 			return
@@ -242,12 +249,14 @@ func (w *TimingWheel) setTask(task *timingEntry) {
 }
 
 func (w *TimingWheel) moveTask(task baseEntry) {
+	// 通过任务 key 名，获取 positionEntry 位置实体信息（位置信息、任务信息）
 	val, ok := w.timers.Get(task.key)
 	if !ok {
 		return
 	}
 
 	timer := val.(*positionEntry)
+	// 任务的延迟时间比时间格间隔还要小，说明应该立即执行
 	if task.delay < w.interval {
 		threading.RunSafe(func() {
 			w.execute(timer.item.key, timer.item.value)
@@ -256,14 +265,20 @@ func (w *TimingWheel) moveTask(task baseEntry) {
 	}
 
 	pos, circle := w.getPositionAndCircle(task.delay)
+	// 如果比时间格间隔大，则通过延迟时间算出时间轮中的新位置pos和circle
 	if pos >= timer.pos {
 		timer.item.circle = circle
+		// 记录前后移动的偏移量，是为了后续重新入队
 		timer.item.diff = pos - timer.pos
 	} else if circle > 0 {
+		// 移动到下一个内圆，将 circle 转换为 diff 的一部分
 		circle--
 		timer.item.circle = circle
+		// 因为是一个数组，要加上 numSlots（相当于要走到下一层？）
 		timer.item.diff = w.numSlots + pos - timer.pos
 	} else {
+		// 如果 offset 提前了，此时 task 也还在第一层
+		// 标记删除老的 task，并重新入队，等待被执行
 		timer.item.removed = true
 		newTask := &timingEntry{
 			baseEntry: task,
