@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/z-sdk/goa/lib/logx"
-	"github.com/z-sdk/goa/lib/stat"
 	"github.com/z-sdk/goa/lib/store/cache"
 	"github.com/z-sdk/goa/lib/store/redis"
 	"sync/atomic"
@@ -26,7 +25,7 @@ type Profile struct {
 
 func init() {
 	logx.Disable()
-	stat.SetReporter(nil)
+	//stat.SetReporter(nil)
 }
 
 func TestCachedConn_FindOne(t *testing.T) {
@@ -172,6 +171,13 @@ func TestCachedConn_QueryIndex_NoCache(t *testing.T) {
 	}, func(conn Conn, v, primaryKey interface{}) error {
 		return nil
 	})
+}
+
+func TestDisable(t *testing.T) {
+	//logx.Disable()
+	//logx.SetLevel(logx.ErrorLevel)
+	logx.Info("大家好")
+	logx.Error("错误")
 }
 
 func resetStats() {

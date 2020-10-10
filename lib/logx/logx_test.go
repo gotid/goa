@@ -23,3 +23,10 @@ func Test(t *testing.T) {
 	WithDuration(time.Minute + time.Second).Info("hello")
 	WithDuration(time.Minute + time.Second).Errorf("hello")
 }
+
+func TestDisable(t *testing.T) {
+	Disable()
+	SetLevel(ErrorLevel)
+	Info("大家好")
+	Error("错误")
+}
