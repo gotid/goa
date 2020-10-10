@@ -13,10 +13,10 @@ type (
 	Cache interface {
 		Del(keys ...string) error
 		Get(key string, dest interface{}) error
-		Set(key string, value interface{}) error
-		SetEx(key string, value interface{}, expires time.Duration) error
-		Take(dest interface{}, key string, queryFn func(newVal interface{}) error) error
-		TakeEx(dest interface{}, key string, queryFn func(newVal interface{}, expires time.Duration) error) error
+		Set(key string, val interface{}) error
+		SetEx(key string, val interface{}, expires time.Duration) error
+		Take(dest interface{}, key string, queryFn func(interface{}) error) error
+		TakeEx(dest interface{}, key string, queryFn func(interface{}, time.Duration) error) error
 	}
 
 	cluster struct {

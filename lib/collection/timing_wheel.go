@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	"goa/lib/lang"
+	"goa/lib/logx"
 	"goa/lib/threading"
 	"goa/lib/timex"
 	"time"
@@ -127,7 +128,7 @@ func (w *TimingWheel) Stop() {
 }
 
 func (w *TimingWheel) initSlots() {
-	fmt.Println("初始化时间轮插槽")
+	logx.Info("初始化时间轮的插槽")
 
 	for i := 0; i < w.numSlots; i++ {
 		w.slots[i] = list.New()
@@ -136,7 +137,7 @@ func (w *TimingWheel) initSlots() {
 
 // 运行定时器，推动时间轮运转
 func (w *TimingWheel) run() {
-	fmt.Println("开始运行时间轮")
+	logx.Info("开始运行时间轮...")
 
 	for {
 		select {

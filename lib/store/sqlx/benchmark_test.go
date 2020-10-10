@@ -11,8 +11,8 @@ func BenchmarkTagQuery(b *testing.B) {
 		for pb.Next() {
 			db := NewMySQL("root:asdfasdf@tcp(192.168.0.166:3306)/nest_label")
 			result := struct {
-				Total int    `db:"totalx"`
-				Name  string `db:"book"`
+				Total int    `conn:"totalx"`
+				Name  string `conn:"book"`
 			}{}
 			err := db.Query(&result, "select book, count(0) totalx from book group by book order by totalx desc")
 			if err != nil {

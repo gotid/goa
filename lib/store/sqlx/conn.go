@@ -10,14 +10,14 @@ import (
 
 const (
 	// 结构体字段中，数据库字段的标记名称
-	tagName = "db"
+	tagName = "conn"
 
 	// 数据库慢日志阈值，用于记录慢查询和慢执行
 	slowThreshold = 500 * time.Millisecond
 )
 
 var (
-	ErrNotFound             = errors.New("没有结果集")
+	ErrNotFound             = errors.New("数据集无匹配的行")
 	ErrNotSettable          = errors.New("扫描目标不可设置")
 	ErrUnsupportedValueType = errors.New("不支持的扫描目标类型")
 	ErrNotReadableValue     = errors.New("无法读取的值，检查结构字段是否大写开头")
@@ -101,8 +101,8 @@ func (c *conn) Query(dest interface{}, query string, args ...interface{}) error 
 
 func (c *conn) Exec(query string, args ...interface{}) (result sql.Result, err error) {
 	err = c.brk.DoWithAcceptable(func() error {
-		//fmt.Println("获取连接并做数据库执行")
-		//fmt.Println()
+		fmt.Println("获取连接并做数据库执行")
+		fmt.Println()
 
 		// 获取数据库连接
 		db, err := getConn(c.driverName, c.dataSourceName)

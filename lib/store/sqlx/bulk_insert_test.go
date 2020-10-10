@@ -50,7 +50,7 @@ func TestBulkInserter_Insert(t *testing.T) {
 func TestBulkInserter_Suffix(t *testing.T) {
 	//logx.Disable()
 	//logx.SetLevel(logx.ErrorLevel)
-	//runSqlTest(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
+	//runSqlTest(t, func(conn *sql.DB, mock sqlmock.Sqlmock) {
 	runSqlTest(t, func(conn Conn) {
 		//var conn mockedConn
 		inserter, err := NewBulkInserter(conn, `INSERT INTO nest_content_online.content_feed(user_id, content) VALUES`+
@@ -75,19 +75,19 @@ func TestBulkInserter_Suffix(t *testing.T) {
 	})
 }
 
-//func runSqlTest(t *testing.T, fn func(db *sql.DB, mock sqlmock.Sqlmock)) {
+//func runSqlTest(t *testing.T, fn func(conn *sql.DB, mock sqlmock.Sqlmock)) {
 func runSqlTest(t *testing.T, fn func(db Conn)) {
 	//logx.Disable()
-	//db, mock, err := sqlmock.New()
+	//conn, mock, err := sqlmock.New()
 	dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true"
 	db := NewMySQL(dataSourceName)
 
 	//if err != nil {
 	//	t.Fatalf("打开数据库连接错误: %s", err)
 	//}
-	//defer db.Close()
+	//defer conn.Close()
 
-	//fn(db, mock)
+	//fn(conn, mock)
 	fn(db)
 
 	//if err := mock.ExpectationsWereMet(); err != nil {

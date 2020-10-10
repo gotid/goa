@@ -22,18 +22,18 @@ func TestDbInstance_QueryRows(t *testing.T) {
 		kinds AccountKinds
 	}
 	type Books []struct {
-		Total         int    `db:"totalx"`
-		Name          string `db:"book"`
-		NotExistField int    `db:"y"`
+		Total         int    `conn:"totalx"`
+		Name          string `conn:"book"`
+		NotExistField int    `conn:"y"`
 	}
 
 	var accountKinds AccountKinds
 	var books Books
 	var adminUsers []struct {
-		Txt       string    `db:"txt"`
-		UserId    int       `db:"user_id"`
-		AdminId   int       `db:"admin_id"`
-		CreatedAt time.Time `db:"created_at"`
+		Txt       string    `conn:"txt"`
+		UserId    int       `conn:"user_id"`
+		AdminId   int       `conn:"admin_id"`
+		CreatedAt time.Time `conn:"created_at"`
 	}
 
 	// 查询测试
@@ -98,7 +98,7 @@ func TestConnBreaker(t *testing.T) {
 	dataSourceName := "root:asdfasdf@tcp(218.244.143.31:3317)/nest_label?parseTime=true"
 	db := NewMySQL(dataSourceName)
 	var book struct {
-		Book string `db:"book"`
+		Book string `conn:"book"`
 	}
 
 	for i := 0; i < 100; i++ {

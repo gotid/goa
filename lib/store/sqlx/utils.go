@@ -284,7 +284,7 @@ func getColumnValueMap(dve reflect.Value) (map[string]interface{}, error) {
 	result := make(map[string]interface{}, size)
 
 	for i := 0; i < size; i++ {
-		// 取字段标记中的列名，如`db:"total"` 中的 total
+		// 取字段标记中的列名，如`conn:"total"` 中的 total
 		columnName := getColumnName(t.Field(i))
 		if len(columnName) == 0 {
 			return nil, nil

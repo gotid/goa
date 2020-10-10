@@ -82,19 +82,19 @@ func (n node) SetEx(key string, value interface{}, expires time.Duration) error 
 	return n.rds.SetEx(key, string(data), int(expires.Seconds()))
 }
 
-// Take 读不到就写，然后返回
-func (n node) Take(dest interface{}, key string, queryFn func(newVal interface{}) error) error {
-	return n.doTake(dest, key, queryFn, func(newVal interface{}) error {
-		return n.Set(key, newVal)
+// Take 拿key对应的dest缓存，拿不到缓存就查库并缓存
+func (n node) Take(dest interface{}, key string, queryFn func(interface{}) error) error {
+	return n.doTake(dest, key, queryFn, func(value interface{}) error {
+		return n.Set(key, value)
 	})
 }
 
 // Take 读不到就写并设置有效期，然后返回
-func (n node) TakeEx(dest interface{}, key string, queryFn func(newVal interface{}, expires time.Duration) error) error {
+func (n node) TakeEx(dest interface{}, key string, queryFn func(interface{}, time.Duration) error) error {
 	expires := n.aroundDuration(n.expires)
-	return n.doTake(dest, key, func(newVal interface{}) error {
-		// 执行数据库查询
-		return queryFn(newVal, expires)
+	return n.doTake(dest, key, func(value interface{}) error {
+		// 读库
+		return queryFn(value, expires)
 	}, func(newVal interface{}) error {
 		// 设置缓存有效期
 		return n.SetEx(key, newVal, expires)
