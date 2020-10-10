@@ -82,12 +82,14 @@ func (n node) SetEx(key string, value interface{}, expires time.Duration) error 
 	return n.rds.SetEx(key, string(data), int(expires.Seconds()))
 }
 
+// Take 读不到就写，然后返回
 func (n node) Take(dest interface{}, key string, queryFn func(newVal interface{}) error) error {
 	return n.doTake(dest, key, queryFn, func(newVal interface{}) error {
 		return n.Set(key, newVal)
 	})
 }
 
+// Take 读不到就写并设置有效期，然后返回
 func (n node) TakeEx(dest interface{}, key string, queryFn func(newVal interface{}, expires time.Duration) error) error {
 	expires := n.aroundDuration(n.expires)
 	return n.doTake(dest, key, func(newVal interface{}) error {

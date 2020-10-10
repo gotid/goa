@@ -30,6 +30,7 @@ type delayTask struct {
 }
 
 func init() {
+	logx.Info("初始化缓存清洁工，重试删除失败项、清理延迟任务")
 	var err error
 	timingWheel, err = collection.NewTimingWheel(time.Second, timingWheelSlots, clean)
 	logx.Must(err)
