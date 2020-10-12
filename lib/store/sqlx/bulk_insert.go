@@ -172,7 +172,7 @@ func parseBulkInsertStmt(stmt string) (bulkStmt, error) {
 	lowerStmt := strings.ToLower(stmt)
 	valuesPos := strings.Index(lowerStmt, valuesTag)
 	if valuesPos <= 0 {
-		return emptyBulkStmt, fmt.Errorf("sql 中没有找到 values 标记：%q", stmt)
+		return emptyBulkStmt, fmt.Errorf("command 中没有找到 values 标记：%q", stmt)
 	}
 
 	// 尝试找出 values 之前定义的插入字段列数

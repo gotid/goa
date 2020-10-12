@@ -47,7 +47,7 @@ type (
 
 	// conn 内部使用的数据库连接，封装查询、执行、事务及断路器支持
 	conn struct {
-		driverName     string          // 驱动名称，支持 mysql/postgres/clickhouse 等 sql-like
+		driverName     string          // 驱动名称，支持 mysql/postgres/clickhouse 等 command-like
 		dataSourceName string          // 数据源名称 Data Source Name，既数据库连接字符串
 		beginTx        beginTxFn       // 可开始事务
 		brk            breaker.Breaker // 断路器，用于后端故障拒绝服务
@@ -79,9 +79,6 @@ func NewConn(driverName, dataSourceName string, opts ...Option) Conn {
 func (c *conn) Query(dest interface{}, query string, args ...interface{}) error {
 	var scanError error
 	return c.brk.DoWithAcceptable(func() error {
-		fmt.Println("获取连接并做数据库查询")
-		fmt.Println()
-
 		// 获取数据库连接
 		db, err := getConn(c.driverName, c.dataSourceName)
 		if err != nil {

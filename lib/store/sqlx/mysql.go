@@ -2,7 +2,7 @@ package sqlx
 
 import (
 	"github.com/go-sql-driver/mysql"
-	_ "github.com/go-sql-driver/mysql"
+	//_ "github.com/go-command-driver/mysql"
 )
 
 const (
