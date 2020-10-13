@@ -4,10 +4,10 @@ import "strings"
 
 const keySeparator = ","
 
-func TotalWeights(confs []Conf) int {
+func TotalWeights(configs []Conf) int {
 	var weights int
 
-	for _, conf := range confs {
+	for _, conf := range configs {
 		if conf.Weight < 0 {
 			conf.Weight = 0
 		}

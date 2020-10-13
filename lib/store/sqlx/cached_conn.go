@@ -84,7 +84,7 @@ func (cc CachedConn) Query(dest interface{}, key string, query QueryFn) error {
 
 // QueryNoCache 无缓存查询，直接读库
 func (cc CachedConn) QueryNoCache(dest interface{}, query string, args ...interface{}) error {
-	return cc.conn.Query(dest, query, args)
+	return cc.conn.Query(dest, query, args...)
 }
 
 func (cc CachedConn) Transact(fn func(Session) error) error {
