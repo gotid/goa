@@ -31,6 +31,7 @@ const (
 
 const (
 	// 日志级别名称
+	alertLevel = "alert" // 警告级
 	infoLevel  = "info"  // 信息级
 	errorLevel = "error" // 错误级
 	fatalLevel = "fatal" // 重大级
@@ -127,7 +128,7 @@ func Setup(c LogConf) error {
 	case volumeMode:
 		return setupWithVolume(c)
 	default:
-		return setupWithFile(c)
+		return setupWithFiles(c)
 	}
 }
 
@@ -189,6 +190,10 @@ func WithCooldownMillis(millis int) LogOption {
 	}
 }
 
+func Alert(v string) {
+	output(errorLogger, alertLevel, v)
+}
+
 func Info(v ...interface{}) {
 	syncInfo(fmt.Sprint(v...))
 }
@@ -215,6 +220,10 @@ func ErrorCallerf(callDepth int, format string, args ...interface{}) {
 
 func ErrorStack(v ...interface{}) {
 	syncStack(fmt.Sprint(v...))
+}
+
+func ErrorStackf(format string, v ...interface{}) {
+	syncStack(fmt.Sprintf(format, v...))
 }
 
 func Fatal(v ...interface{}) {
@@ -273,7 +282,7 @@ func setupWithConsole(c LogConf) {
 	})
 }
 
-func setupWithFile(c LogConf) error {
+func setupWithFiles(c LogConf) error {
 	var opts []LogOption
 	var err error
 
@@ -328,7 +337,7 @@ func setupWithVolume(c LogConf) error {
 	}
 
 	c.Path = path.Join(c.Path, c.ServiceName, sysx.Hostname())
-	return setupWithFile(c)
+	return setupWithFiles(c)
 }
 
 func handleOptions(opts []LogOption) {
