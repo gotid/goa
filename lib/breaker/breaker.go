@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	StateClosed State = iota // 断路器关闭
-	StateOpen                // 断路器打开
+	StateClosed State = iota // 断路器关闭 0
+	StateOpen                // 断路器打开 1
 )
 
 var ErrServiceUnavaliable = errors.New("断路器已打开，服务不可用")

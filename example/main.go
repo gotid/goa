@@ -8,16 +8,16 @@ import (
 
 type (
 	Node struct {
-		Id        int64     `db:"id"`
-		Name      string    `db:"name"`       // 后台标签
-		ParentId  int64     `db:"parent_id"`  // 父级编号
-		ParentIds string    `db:"parent_ids"` // 父级路径
-		Level     int64     `db:"level"`      // 节点级别
-		IsValid   int64     `db:"is_valid"`   // 是否有效
-		Sort      int64     `db:"sort"`       // 同级排序
-		Txt       string    `db:"txt"`        // 描述文本
-		CreatedAt time.Time `db:"created_at"`
-		UpdatedAt time.Time `db:"updated_at"`
+		Id        int64     `conn:"id"`
+		Name      string    `conn:"name"`       // 后台标签
+		ParentId  int64     `conn:"parent_id"`  // 父级编号
+		ParentIds string    `conn:"parent_ids"` // 父级路径
+		Level     int64     `conn:"level"`      // 节点级别
+		IsValid   int64     `conn:"is_valid"`   // 是否有效
+		Sort      int64     `conn:"sort"`       // 同级排序
+		Txt       string    `conn:"txt"`        // 描述文本
+		CreatedAt time.Time `conn:"created_at"`
+		UpdatedAt time.Time `conn:"updated_at"`
 	}
 )
 

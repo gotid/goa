@@ -17,10 +17,10 @@ var (
 )
 
 type Profile struct {
-	ID       int64  `db:"id"`
-	Kind     int    `db:"kind"`
-	Nickname string `db:"nickname"`
-	TestId   int    `db:"test_id"`
+	ID       int64  `conn:"id"`
+	Kind     int    `conn:"kind"`
+	Nickname string `conn:"nickname"`
+	TestId   int    `conn:"test_id"`
 }
 
 func init() {
@@ -171,6 +171,39 @@ func TestCachedConn_QueryIndex_NoCache(t *testing.T) {
 	}, func(conn Conn, v, primaryKey interface{}) error {
 		return nil
 	})
+}
+
+func TestCachedConn_QueryNoCache(t *testing.T) {
+	type AreaInfo struct {
+		Id         uint8  `db:"id"`          // 区域字典表id
+		Code       string `db:"code"`        // 国家行政区域编码
+		ParentCode string `db:"parent_code"` // 父级编号
+		Name       string `db:"name"`        // 区域全称
+		ShortName  string `db:"short_name"`  // 区域简称
+		Gcode      string `db:"gcode"`       // 高德行政区域编码
+		Bcode      string `db:"bcode"`       // 百度行政区域编码
+		Postcode   string `db:"postcode"`    // 邮政编码
+		Pinyin     string `db:"pinyin"`      // 拼音
+		Lng        string `db:"lng"`         // 经度
+		Lat        string `db:"lat"`         // 维度
+		Level      int64  `db:"level"`       // 级别
+		Sort       int64  `db:"sort"`        // 排序
+	}
+
+	resetStats()
+	r := redis.NewRedis("192.168.0.166:6800", redis.StandaloneMode)
+	conn := NewMySQL("root:asdfasdf@tcp(192.168.0.166:3306)/nest_public?parseTime=true")
+	c := NewCachedConn(conn, r, cache.WithExpires(10*time.Second))
+
+	var list []*AreaInfo
+	err := c.QueryNoCache(&list, "select * from area_info where `level`=2 or `level`=3")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, area := range list {
+		fmt.Println(area.Name, area.Code)
+	}
 }
 
 func TestDisable(t *testing.T) {

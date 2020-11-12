@@ -7,6 +7,35 @@ import (
 	"time"
 )
 
+type Dict struct {
+	Id             int64     `conn:"id"`               // 字典表 | 公共库
+	ParentId       int64     `conn:"parent_id"`        // 字典分类ID
+	Name           string    `conn:"name"`             // 字典名称
+	Type           string    `conn:"type"`             // 字典类型
+	CreateTime     time.Time `conn:"create_time"`      // 创建时间
+	CreateUserId   int64     `conn:"create_user_id"`   // 创建人id
+	CreateUserName string    `conn:"create_user_name"` // 创建人姓名
+	UpdateTime     time.Time `conn:"update_time"`      // 更新时间
+	UpdateUserId   int64     `conn:"update_user_id"`   // 更新人id
+	UpdateUserName string    `conn:"update_user_name"` // 更新者姓名
+	DeleteFlag     int64     `conn:"delete_flag"`      // 删除标记: 0删除|1未删除
+}
+
+func TestABC(t *testing.T) {
+	dataSourceName := "root:qxqgqzx2018@tcp(106.54.101.160:3306)/nest_public?parseTime=true"
+	db := NewMySQL(dataSourceName)
+
+	var dictList []*Dict
+	err := db.Query(&dictList, "select id, name, create_time from dict limit 0, 5")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, dict := range dictList {
+		fmt.Println(dict.Id, dict.Name, dict.CreateTime)
+	}
+}
+
 func TestDbInstance_QueryRows(t *testing.T) {
 	dataSourceName := "root:asdfasdf@tcp(192.168.0.166:3306)/nest_label?parseTime=true"
 	db := NewMySQL(dataSourceName)
