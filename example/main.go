@@ -25,6 +25,7 @@ func FindNodes(parentIds string) ([]Node, error) {
 	db := sqlx.NewMySQL("root:asdfasdf@tcp(192.168.0.166:3306)/nest_label")
 	query := `select  id, name, created_at from node where parent_ids like ? limit 10`
 	var resp []Node
+
 	err := db.Query(&resp, query, parentIds)
 	switch err {
 	case nil:
