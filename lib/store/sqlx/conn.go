@@ -10,7 +10,7 @@ import (
 
 const (
 	// 结构体字段中，数据库字段的标记名称
-	tagName = "conn"
+	tagName = "db"
 
 	// 数据库慢日志阈值，用于记录慢查询和慢执行
 	slowThreshold = 500 * time.Millisecond

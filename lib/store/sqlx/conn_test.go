@@ -22,7 +22,7 @@ type Dict struct {
 }
 
 func TestABC(t *testing.T) {
-	dataSourceName := "root:qxqgqzx2018@tcp(106.54.101.160:3306)/nest_public?parseTime=true"
+	dataSourceName := "root:qxqgqzx2018@tcp(192.168.0.17:3306)/nest_public?parseTime=true"
 	db := NewMySQL(dataSourceName)
 
 	var dictList []*Dict

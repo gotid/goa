@@ -21,18 +21,18 @@ type (
 		PopAll() interface{}       // 删除并返回当前所有任务
 	}
 
-	// Commander 指挥者：一个传递 interface{} 的通道
-	Commander chan interface{}
+	// TaskChan 任务通道：一个传递 interface{} 的通道
+	TaskChan chan interface{}
 
-	// Confirmer 确认者
-	Confirmer chan lang.PlaceholderType
+	// ConfirmChan 确认通道
+	ConfirmChan chan lang.PlaceholderType
 
 	// 定时调度器
 	PeriodicalDispatcher struct {
 		interval    time.Duration       // 任务调度间隔
 		taskManager TaskManager         // 任务管理者
-		commander   Commander           // 任务指挥者
-		confirmer   Confirmer           // 任务确认者
+		taskChan    TaskChan            // 任务任务通道
+		confirmChan ConfirmChan         // 任务确认通道
 		wg          sync.WaitGroup      // 同步等待组
 		wgBarrier   syncx.Barrier       // 同步等待组的屏障器
 		guarded     bool                // 是否守卫
@@ -41,13 +41,13 @@ type (
 	}
 )
 
-// NewPeriodicalDispatcher 定时执行器（间隔时间，任务管理器）
+// NewPeriodicalDispatcher 定时调度器（间隔时间，任务管理器）
 func NewPeriodicalDispatcher(interval time.Duration, taskManager TaskManager) *PeriodicalDispatcher {
 	dispatcher := &PeriodicalDispatcher{
 		interval:    interval,
 		taskManager: taskManager,
-		commander:   make(chan interface{}, 1),
-		confirmer:   make(chan lang.PlaceholderType),
+		taskChan:    make(chan interface{}, 1),
+		confirmChan: make(chan lang.PlaceholderType),
 		ticker: func() timex.Ticker {
 			return timex.NewTicker(interval)
 		},
@@ -61,90 +61,91 @@ func NewPeriodicalDispatcher(interval time.Duration, taskManager TaskManager) *P
 	return dispatcher
 }
 
-// Add 添加新任务给指挥者并确认可以执行
-func (e *PeriodicalDispatcher) Add(task interface{}) {
-	if tasks, ok := e.setAndGet(task); ok {
-		e.commander <- tasks // 将当前所有任务发给指挥者
-		<-e.confirmer        // 确认者进行确认
+// Add 添加新任务给任务通道并确认可以执行
+func (pd *PeriodicalDispatcher) Add(task interface{}) {
+	if tasks, ok := pd.setAndGet(task); ok {
+		pd.taskChan <- tasks // 将当前所有任务发给任务通道
+		<-pd.confirmChan     // 确认通道进行确认
 	}
 }
 
 // Flush 清洗任务
-func (e *PeriodicalDispatcher) Flush() bool {
-	e.enter()
-	return e.execute(func() interface{} {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		return e.taskManager.PopAll()
+func (pd *PeriodicalDispatcher) Flush() bool {
+	pd.enter()
+	return pd.execute(func() interface{} {
+		pd.lock.Lock()
+		defer pd.lock.Unlock()
+		return pd.taskManager.PopAll()
 	}())
 }
 
 // Sync 同步执行一个自定义函数
-func (e *PeriodicalDispatcher) Sync(fn func()) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
+func (pd *PeriodicalDispatcher) Sync(fn func()) {
+	pd.lock.Lock()
+	defer pd.lock.Unlock()
 	fn()
 }
 
 // Wait 加锁保护等待操作
-func (e *PeriodicalDispatcher) Wait() {
-	e.wgBarrier.Guard(func() {
-		e.wg.Wait()
+func (pd *PeriodicalDispatcher) Wait() {
+	pd.Flush()
+	pd.wgBarrier.Guard(func() {
+		pd.wg.Wait()
 	})
 }
 
 // setAndGet 新增并返回任务，如有可能则后台直接执行任务
 // 返回：加入后的所有待处理任务，是否已递交任务管理者
-func (e *PeriodicalDispatcher) setAndGet(task interface{}) (interface{}, bool) {
-	e.lock.Lock()
+func (pd *PeriodicalDispatcher) setAndGet(task interface{}) (interface{}, bool) {
+	pd.lock.Lock()
 	defer func() {
 		var start bool
-		if !e.guarded {
-			e.guarded = true
+		if !pd.guarded {
+			pd.guarded = true
 			start = true
 		}
-		e.lock.Unlock()
+		pd.lock.Unlock()
 		if start {
-			e.backgroundFlush()
+			pd.backgroundFlush()
 		}
 	}()
 
-	if e.taskManager.Add(task) {
-		return e.taskManager.PopAll(), true
+	if pd.taskManager.Add(task) {
+		return pd.taskManager.PopAll(), true
 	}
 
 	return nil, false
 }
 
 // 后台任务清洗
-func (e *PeriodicalDispatcher) backgroundFlush() {
+func (pd *PeriodicalDispatcher) backgroundFlush() {
 	threading.GoSafe(func() {
-		ticker := e.ticker()
+		ticker := pd.ticker()
 		defer ticker.Stop()
 
-		// 指挥者调度定时执行器
-		var commanded bool
+		// 任务通道调度定时执行器
+		var executed bool
 		lastTime := timex.Now()
 		for {
 			select {
-			case tasks := <-e.commander:
-				commanded = true
-				e.enter()
-				e.confirmer <- lang.Placeholder
-				e.execute(tasks)
+			case tasks := <-pd.taskChan:
+				executed = true
+				pd.enter()
+				pd.confirmChan <- lang.Placeholder
+				pd.execute(tasks)
 				lastTime = timex.Now()
 			case <-ticker.Chan():
-				if commanded {
-					commanded = false
-				} else if e.Flush() {
+				if executed {
+					executed = false
+				} else if pd.Flush() {
 					lastTime = timex.Now()
-				} else if timex.Since(lastTime) > e.interval*idleRound {
-					e.lock.Lock()
-					e.guarded = false
-					e.lock.Unlock()
+				} else if timex.Since(lastTime) > pd.interval*idleRound {
+					pd.lock.Lock()
+					pd.guarded = false
+					pd.lock.Unlock()
 
 					// 再次清洗以防丢任务
-					e.Flush()
+					pd.Flush()
 					return
 				}
 			}
@@ -153,31 +154,31 @@ func (e *PeriodicalDispatcher) backgroundFlush() {
 }
 
 // enter 执行者进入，等待组加锁
-func (e *PeriodicalDispatcher) enter() {
-	e.wgBarrier.Guard(func() {
-		e.wg.Add(1)
+func (pd *PeriodicalDispatcher) enter() {
+	pd.wgBarrier.Guard(func() {
+		pd.wg.Add(1)
 	})
 }
 
 // execute 调度任务管理者，执行任务
-func (e *PeriodicalDispatcher) execute(tasks interface{}) bool {
-	defer e.done()
+func (pd *PeriodicalDispatcher) execute(tasks interface{}) bool {
+	defer pd.done()
 
-	ok := e.has(tasks)
+	ok := pd.has(tasks)
 	if ok {
-		e.taskManager.Execute(tasks)
+		pd.taskManager.Execute(tasks)
 	}
 
 	return ok
 }
 
 // done 完成分组任务
-func (e *PeriodicalDispatcher) done() {
-	e.wg.Done()
+func (pd *PeriodicalDispatcher) done() {
+	pd.wg.Done()
 }
 
 // has 判断任务有无
-func (e *PeriodicalDispatcher) has(tasks interface{}) bool {
+func (pd *PeriodicalDispatcher) has(tasks interface{}) bool {
 	if tasks == nil {
 		return false
 	}

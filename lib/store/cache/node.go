@@ -22,7 +22,7 @@ const (
 var errPlaceholder = errors.New("placeholder")
 
 type node struct {
-	rds             *redis.Redis
+	redis           *redis.Redis
 	barrier         syncx.SharedCalls
 	expires         time.Duration
 	notFoundExpires time.Duration
@@ -36,7 +36,7 @@ type node struct {
 func NewCacheNode(r *redis.Redis, barrier syncx.SharedCalls, stat *Stat, errNotFound error, opts ...Option) Cache {
 	o := newOptions(opts...)
 	return node{
-		rds:             r,
+		redis:           r,
 		barrier:         barrier,
 		expires:         o.Expires,
 		notFoundExpires: o.NotFoundExpires,
@@ -53,7 +53,7 @@ func (n node) Del(keys ...string) error {
 		return nil
 	}
 
-	if _, err := n.rds.Del(keys...); err != nil {
+	if _, err := n.redis.Del(keys...); err != nil {
 		logx.Errorf("删除缓存失败，keys: %q, 错误: %v", formatKeys(keys), err)
 		n.asyncRetryDelCache(keys...)
 	}
@@ -79,7 +79,7 @@ func (n node) SetEx(key string, value interface{}, expires time.Duration) error 
 		return err
 	}
 
-	return n.rds.SetEx(key, string(data), int(expires.Seconds()))
+	return n.redis.SetEx(key, string(data), int(expires.Seconds()))
 }
 
 // Take 拿key对应的dest缓存，拿不到缓存就查库并缓存
@@ -102,19 +102,19 @@ func (n node) TakeEx(dest interface{}, key string, queryFn func(interface{}, tim
 }
 
 func (n node) String() string {
-	return n.rds.Addr
+	return n.redis.Addr
 }
 
 func (n node) asyncRetryDelCache(keys ...string) {
 	AddCleanTask(func() error {
-		_, err := n.rds.Del(keys...)
+		_, err := n.redis.Del(keys...)
 		return err
 	}, keys...)
 }
 
 func (n node) doGet(key string, dest interface{}) error {
 	n.stat.IncrTotal()
-	result, err := n.rds.Get(key)
+	result, err := n.redis.Get(key)
 	if err != nil {
 		n.stat.IncrMiss()
 		return err
@@ -168,15 +168,15 @@ func (n node) doTake(dest interface{}, key string, queryFn func(newVal interface
 	if err != nil {
 		return err
 	}
-	if hit {
-		// 从之前查询的缓存中直接获取结果
-		n.stat.IncrTotal()
-		n.stat.IncrHit()
-
-		return json.Unmarshal(result.([]byte), dest)
-	} else {
+	if !hit {
 		return nil
 	}
+
+	// 从之前查询的缓存中直接获取结果
+	n.stat.IncrTotal()
+	n.stat.IncrHit()
+
+	return json.Unmarshal(result.([]byte), dest)
 }
 
 func (n node) processCache(key string, result string, dest interface{}) error {
@@ -185,11 +185,11 @@ func (n node) processCache(key string, result string, dest interface{}) error {
 		return nil
 	}
 
-	msg := fmt.Sprintf("解封缓存失败，缓存节点：%s，键：%s，值：%s，错误：%v", n.rds.Addr, key, result, err)
+	msg := fmt.Sprintf("解封缓存失败，缓存节点：%s，键：%s，值：%s，错误：%v", n.redis.Addr, key, result, err)
 	logx.Error(msg)
 	stat.Report(msg)
-	if _, err = n.rds.Del(key); err != nil {
-		logx.Errorf("删除无效缓存，节点：%s，键：%s，值：%s，错误：%v", n.rds.Addr, key, result, err)
+	if _, err = n.redis.Del(key); err != nil {
+		logx.Errorf("删除无效缓存，节点：%s，键：%s，值：%s，错误：%v", n.redis.Addr, key, result, err)
 	}
 
 	// 返回 errNotFound 以通过 queryFn 重新加载缓存值
@@ -203,5 +203,5 @@ func (n node) aroundDuration(expires time.Duration) time.Duration {
 
 // 防缓存穿透：没找到的记录，照样缓存并设置短暂过期时间，减缓数据库压力
 func (n node) setWithNotFound(key string) error {
-	return n.rds.SetEx(key, notFoundPlaceholder, int(n.aroundDuration(n.notFoundExpires).Seconds()))
+	return n.redis.SetEx(key, notFoundPlaceholder, int(n.aroundDuration(n.notFoundExpires).Seconds()))
 }
